@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<HTML> 
+	<head> 
+	<meta charset="UTF-8">
+    <title>Create new job order</title> 
+	<script src="jquery-2.1.4.js"></script>
+		<script>
+			$(document).ready(function(){
+			
+				var refJobExist;
+				var specExist;
+				var jobExist;
+				
+				var dateValid;
+				var priorityValid;
+				var listValid;
+				var refJobValid;
+				var refSpecValid;
+				var orderValid;
+				
+				
+				//submit validation
+				$('#submit').click(function(){
+				
+					//date validation
+					var txtVal =  $('#completionDate').val();
+					if(isDate(txtVal)){
+						if(diffDate() >= 0){
+							//valid date
+							dateValid = true;
+							$( '#dateDiv' ).empty();
+						}else{
+							//invalid date, earlier then current date
+							dateValid = false;
+							$( '#dateDiv' ).empty();
+							$( '#dateDiv' ).append('You can not enter a date earlier then today, the date you enter is earlier by: ' + -diffDate() + ' days!');
+						}
+					}else{
+						//invalid date format
+						dateValid = false;
+						$( '#dateDiv' ).empty();
+						$( '#dateDiv' ).append('The date you enter is invalid, please use the dd/mm/yyyy format!');
+					}
+
+					//priority validation
+					var priorityVal =  $('#jobPriority').val();
+					if(isPriority(priorityVal)){
+						//valid priority number
+						priorityValid = true;
+						$( '#priorityDiv' ).empty();
+					}else{
+						//invalid priority number
+						priorityValid = false;
+						$( '#priorityDiv' ).empty();
+						$( '#priorityDiv' ).append('Please select the priority between 1 to 11, 1 being not important and 11 being urgent!');
+					}
+
+					//product stage list validation
+					var stageList = $('#hiddenDiv').text();
+					if(stageList){
+						//valid list
+						listValid = true;
+						$( '#stageErrDiv' ).empty();
+					}else{
+						//invalid list, cannot be empty
+						listValid = false;
+						$( '#stageErrDiv' ).empty();
+						$( '#stageErrDiv' ).append('Please add atleast 1 item to the stage production list, it can not be empty!');
+					}
+										
+					//reference job validation
+					isPreviousJob();
+					if(refJobExist){
+						//valid reference job
+						refJobValid = true;
+						$( '#refJobDiv' ).empty();
+					}else{
+						//invalid reference job, job number doesn't exist
+						refJobValid = false;
+						$( '#refJobDiv' ).empty();
+						$( '#refJobDiv' ).append('The job number you have added does not exist please make sure you have the correct number');
+					}
+					
+					//reference specification sheet validation
+					isSpecSheet();
+					if(specExist){
+						refSpecValid = true;
+						$( '#refSpecDiv' ).empty();
+					}else{
+						refSpecValid = false;
+						$( '#refSpecDiv' ).empty();
+						$( '#refSpecDiv' ).append('The specification sheet number you have added does not exist please make sure you have the correct number');
+					}
+
+					//job order validation
+					isJob();
+					if(jobExist){
+						orderValid = true;
+						$( '#jobOrderDiv' ).empty();
+					}else{
+						orderValid = false;
+						$( '#jobOrderDiv' ).empty();
+						$( '#jobOrderDiv' ).append('The job number you have added does not exist please make sure you have the correct number');
+					}
+					
+					
+					if(dateValid && priorityValid && listValid && refJobValid && refSpecValid && orderValid){
+						alert('All input correct');
+						
+						$.ajax({
+							type: "POST",
+							url: "submitOrderSheet.php",
+							data: 'jobNum=' + $('#jobNumber').val() + 
+							'&sheetColour=' + $('#sheetColour:checked').val() + 
+							'&completionDate=' + $('#completionDate').val(),
+							
+							async: false,
+							success: function(response) {			
+								
+									alert(response);
+														   
+							}
+						});	
+						
+						
+					}else{
+						alert('incorrect input dectected');
+					}
+					
+					
+					
+					
+					
+				});
+			
+			
+			
+
+				
+				//stage list buttons
+				$('#buttonA').click(function(){
+					$( '#stageDiv' ).append( "Cutting station, " );
+					$( '#hiddenDiv' ).append( "A" );
+				});
+				$('#buttonB').click(function(){
+					$( '#stageDiv' ).append( "Fabrication station, " );
+					$( '#hiddenDiv' ).append( "B" );
+				});
+				$('#buttonC').click(function(){
+					$( '#stageDiv' ).append( "Moulding station, " );
+					$( '#hiddenDiv' ).append( "C" );
+				});
+				$('#buttonD').click(function(){
+					$( '#stageDiv' ).append( "Packaging station, " );
+					$( '#hiddenDiv' ).append( "D" );
+				});
+	
+				//clear stage list button
+				$('#buttonE').click(function(){
+					$( '#stageDiv' ).empty();
+					$( '#hiddenDiv' ).empty();
+				});
+				
+				//list stage test
+				$('#buttonList').click(function() {
+					//alert($('#stageDiv').text());
+					alert($('#hiddenDiv').text());
+				});
+
+				//Ajax post check previous job exist or not method
+				function isPreviousJob(){
+					$.ajax({
+						type: "POST",
+						url: "checkPreviousJob.php",
+						data: 'JobNum=' + $('#referenceJob').val(),
+						dataType: 'json',
+						async: false,
+						success: function(response) {			
+							if(response){
+								refJobExist = true;
+							}else{
+								refJobExist = false;
+							}						   
+						}
+					});				
+				}
+	
+				//Ajax post check specification sheet exist or not method
+				function isSpecSheet(){
+					$.ajax({
+						type: "POST",
+						url: "checkSpecSheet.php",
+						data: 'specNum=' + $('#referenceSpec').val(),
+						dataType: 'json',
+						async: false,
+						success: function(response) {			
+							if(response){
+								specExist = true;
+							}else{
+								specExist = false;
+							}						   
+						}
+					});				
+				}
+
+				//Ajax post check job order exist or not method
+				function isJob(){
+					$.ajax({
+						type: "POST",
+						url: "checkPreviousJob.php",
+						data: 'JobNum=' + $('#jobNumber').val(),
+						dataType: 'json',
+						async: false,
+						success: function(response) {			
+							if(response){
+								jobExist = true;
+							}else{
+								jobExist =false;
+							}						   
+						}
+					});				
+				}
+	
+				//calculate the difference between current date and estimated completion date
+				function diffDate() {
+					var oneDay = 24*60*60*1000; // hours*minutes*seconds*milliseconds
+					
+					var today = new Date();
+					var dd = today.getDate();
+					var mm = today.getMonth()+1; //January is 0
+					var yyyy = today.getFullYear();
+					if(dd<10) {
+						dd='0'+dd
+					} 
+					if(mm<10) {
+						mm='0'+mm
+					} 
+					var currentDate = new Date(yyyy,mm,dd);
+					
+					var completion = $('#completionDate').val().split("-");
+					var completionDate = new Date(completion[0],completion[1],completion[2]);
+
+					var diffDays = Math.round(Math.abs((currentDate.getTime() - completionDate.getTime())/(oneDay)));
+					
+					if(currentDate.getTime() > completionDate.getTime()){
+						//date is earlier then current date
+						return -diffDays;
+					}else{
+						//date is later then current date
+						return diffDays;
+					}
+				}
+
+				//check correct date input method
+				function isDate(txtDate){
+					var currVal = txtDate.split("-").reverse().join("/");;
+					if(currVal == '')
+						return false;
+					
+					var rxDatePattern = /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(\d{4})$/; //Declare Regex
+					var dtArray = currVal.match(rxDatePattern); // is format OK?
+					
+					if (dtArray == null) 
+						return false;
+					
+					//Checks for dd/mm/yyyy format.
+					dtDay= dtArray[1];
+					dtMonth = dtArray[3];
+					dtYear = dtArray[5];        
+					
+					if (dtMonth < 1 || dtMonth > 12) 
+						return false;
+					else if (dtDay < 1 || dtDay> 31) 
+						return false;
+					else if ((dtMonth==4 || dtMonth==6 || dtMonth==9 || dtMonth==11) && dtDay ==31) 
+						return false;
+					else if (dtMonth == 2) 
+					{
+						var isleap = (dtYear % 4 == 0 && (dtYear % 100 != 0 || dtYear % 400 == 0));
+						if (dtDay> 29 || (dtDay ==29 && !isleap)) 
+								return false;
+					}
+					return true;
+				}
+				
+				//check if priority input is correct
+				function isPriority(priorityVal){
+					if(priorityVal < 1 || priorityVal > 11){
+						return false;
+					}
+					return true;
+				}
+
+			}); 
+
+		</script>
+	</head> 
+	<body>
+		<h1>Job Form</h1>
+	
+	<form>
+		<h3>Job Information</h3>
+			
+		
+			
+			<label>Sheet Colour: yellow or blue</label><br>	
+			<input type="radio" name="sheetColour" id="sheetColour" value="yellow" checked>Yellow <br>
+			<input type="radio" name="sheetColour" id="sheetColour" value="blue">Blue <br><br>
+			
+			<label>Completion date: </label>
+			<input type="date" id="completionDate">
+			<div id="dateDiv" ></div><br>
+
+			<label>Job priority: </label>
+			<input type="number" id="jobPriority" min="1" max="11">
+			<div id="priorityDiv"></div><br>
+			
+			<label>Attach Customer notes: </label>
+			<input type="file" name="attachDoc" multiple><br><br>
+			
+			<label>Reference previous job: </label><input type="number" id="referenceJob" max="99999999">
+			<div id="refJobDiv"></div><br>
+			
+			<label>Reference specification sheet: </label><input type="number" id="referenceSpec" max="99999999">
+			<div id="refSpecDiv"></div><br>
+
+			<label>Production stage list: </label><br>
+			<button type="button" id="buttonA" onclick="">Cutting station</button>
+			<button type="button" id="buttonB" onclick="">Fabrication station</button>
+			<button type="button" id="buttonC" onclick="">Moulding station</button>
+			<button type="button" id="buttonD" onclick="">Packaging station</button>
+			<br><br>
+			
+			<div id="stageDiv"></div><br>
+			<div id="stageErrDiv"></div><br>
+			<div id="hiddenDiv" hidden></div>
+			<br>
+			
+			<button type="button" id="buttonList" onclick="">Stage List</button>
+			<button type="button" id="buttonE" onclick="">Clear list</button>
+	
+		<h3>Customer Details</h3>
+			<label>Job Number: </label><input type="number" name="jobNumber" id="jobNumber">
+			<div id="jobOrderDiv"></div><br>
+			<label>Cash sale: </label><br>
+			<label>Customer name: </label><br>
+			<label>Phone number: </label><br>
+			<label>Bill to: </label><br>
+			<label>Ship to: </label><br>
+			
+		<h3>Job details</h3>
+			<label>Sales person: </label><br>
+			<label>Customer O/N: </label><br>
+			<label>Order date: </label><br>
+			<label>Required by: </label><br>
+			<label>Ship VIA: </label><br>
+
+		<h3>Material Details</h3>
+			<label>QTY: </label><br>
+			<label>ITEM NO.: </label><br>
+			<label>Description: </label><br><br>
+			
+			<input id="submit" name="submit" type = "button" onClick = "" value = "Create order"><br>
+			<div id="test" ></div>
+		
+	</form>
+	
+	</body> 
+</HTML>
