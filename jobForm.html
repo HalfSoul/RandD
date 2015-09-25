@@ -107,29 +107,35 @@
 					if(dateValid && priorityValid && listValid && refJobValid && refSpecValid && orderValid){
 						alert('All input correct');
 						
+						//calculate priority rate
+						var priorityRate = (11 - $('#jobPriority').val())/diffDate();
+						priorityRate = Math.round( priorityRate * 10 ) / 10;
+						alert(priorityRate);
+						
+						
 						$.ajax({
 							type: "POST",
 							url: "submitOrderSheet.php",
 							data: 'jobNum=' + $('#jobNumber').val() + 
 							'&sheetColour=' + $('#sheetColour:checked').val() + 
-							'&completionDate=' + $('#completionDate').val(),
+							'&completionDate=' + $('#completionDate').val() +
+							'&jobPriority=' + $('#jobPriority').val() +
+							'&priorityRate=' + priorityRate + 
+							'&referenceJob=' + $('#referenceJob').val() +
+							'&referenceSpec=' + $('#referenceSpec').val() +
+							'&productionList=' + $('#hiddenDiv').text(),
 							
 							async: false,
 							success: function(response) {			
 								
 									alert(response);
-														   
+							   
 							}
 						});	
-						
 						
 					}else{
 						alert('incorrect input dectected');
 					}
-					
-					
-					
-					
 					
 				});
 			
@@ -318,10 +324,10 @@
 			<label>Attach Customer notes: </label>
 			<input type="file" name="attachDoc" multiple><br><br>
 			
-			<label>Reference previous job: </label><input type="number" id="referenceJob" max="99999999">
+			<label>Reference previous job: </label><input type="number" id="referenceJob" min="0" max="99999999">
 			<div id="refJobDiv"></div><br>
 			
-			<label>Reference specification sheet: </label><input type="number" id="referenceSpec" max="99999999">
+			<label>Reference specification sheet: </label><input type="number" id="referenceSpec" min="0" max="99999999">
 			<div id="refSpecDiv"></div><br>
 
 			<label>Production stage list: </label><br>
@@ -340,7 +346,7 @@
 			<button type="button" id="buttonE" onclick="">Clear list</button>
 	
 		<h3>Customer Details</h3>
-			<label>Job Number: </label><input type="number" name="jobNumber" id="jobNumber">
+			<label>Job Number: </label><input type="number" name="jobNumber" id="jobNumber" min="0" max="99999999">
 			<div id="jobOrderDiv"></div><br>
 			<label>Cash sale: </label><br>
 			<label>Customer name: </label><br>

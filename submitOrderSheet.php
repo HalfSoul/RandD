@@ -3,8 +3,7 @@
 	if($_POST['jobNum']){
         $jobNum = $_POST['jobNum'];
     }else{
-	
-	
+
 	}
 	
 	if($_POST['sheetColour']){
@@ -21,15 +20,39 @@
 
 	if($_POST['completionDate']){
         $completionDate = $_POST['completionDate'];
-		echo $completionDate;
     }else{
 	
 	}
 
+	if($_POST['jobPriority']){
+        $jobPriority = $_POST['jobPriority'];
+    }else{
 	
+	}
+	
+	if($_POST['priorityRate']){
+        $priorityRate = $_POST['priorityRate'];
+    }else{
+	
+	}
 
+	if($_POST['referenceJob']){
+        $referenceJob = $_POST['referenceJob'];
+    }else{
 	
-	echo 'apple';
+	}
+	
+	if($_POST['referenceSpec']){
+        $referenceSpec = $_POST['referenceSpec'];
+    }else{
+	
+	}
+	
+	if($_POST['productionList']){
+        $productionList = $_POST['productionList'];
+    }else{
+	
+	}
 
 	require_once ("settings.php");
 
@@ -67,8 +90,8 @@
 				 completion_date DATE NOT NULL,
 				 tasks_complete INTEGER(10),
 
-				 job_priority INTEGER(2),
-				 priority_rate INTEGER(2),
+				 job_priority DECIMAL(3.1),
+				 priority_rate DECIMAL(3,1),
 				 
 				 custmer_notes BLOB,
 				 
@@ -88,7 +111,6 @@
 		
 		/*
 		$result = $conn->query("SELECT * FROM jobsheet WHERE job_code = '234'");
-	echo 'apple2';
 		if($result === FALSE) { 
 			die(mysql_error());
 		}
@@ -98,11 +120,11 @@
 			//echo json_encode(false);
 		}
 		$file = null;
-	echo 'apple3';
 		*/
+		
 		$file = null;
 		$sqlInsertPost = "INSERT INTO jobsheet (job_code, customer_name, job_status, sheet_colour, completion_date, tasks_complete, job_priority, priority_rate, custmer_notes, ref_job, ref_spec ,production_list)
-										VALUES ('$jobNum', 'john', 'in progress', '$sheetColour', '$completionDate', '0', '5', '4', '$file', '3434', '34426', 'ABC' )";
+										VALUES ('$jobNum', 'john', 'In progress', '$sheetColour', '$completionDate', '0', '$jobPriority', '$priorityRate', '$file', '$referenceJob', '$referenceSpec', '$productionList' )";
 					
 		if ($conn->query($sqlInsertPost) === TRUE) {
 			echo "Your booking has been created successfully <br>";
