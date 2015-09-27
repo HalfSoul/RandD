@@ -103,6 +103,14 @@
 						$( '#jobOrderDiv' ).append('The job number you have added does not exist please make sure you have the correct number');
 					}
 					
+					//set file var if not empty
+					var file;
+					if( document.getElementById("notes").files.length =! 0 ){
+							
+						var fileInput = document.getElementById('notes');
+						file = fileInput.files[0];
+					}
+					
 					
 					if(dateValid && priorityValid && listValid && refJobValid && refSpecValid && orderValid){
 						alert('All input correct');
@@ -111,38 +119,43 @@
 						var priorityRate = (11 - $('#jobPriority').val())/diffDate();
 						priorityRate = Math.round( priorityRate * 10 ) / 10;
 						alert(priorityRate);
-						
-						
+
+						//form data to be pasted into Ajax post
+						var formData = new FormData();                  
+						formData.append("jobNum", $('#jobNumber').val());
+						formData.append("sheetColour", $('#sheetColour:checked').val());
+						formData.append("completionDate", $('#completionDate').val());
+						formData.append("jobPriority", $('#jobPriority').val());
+						formData.append("priorityRate", priorityRate);
+						formData.append("referenceJob", $('#referenceJob').val());
+						formData.append("referenceSpec", $('#referenceSpec').val());
+						formData.append("productionList", $('#hiddenDiv').text());
+						formData.append("productionList", $('#hiddenDiv').text());
+						if( document.getElementById("notes").files.length =! 0 ){
+							formData.append("notes", file);
+						}
+
+						//Ajax post form data
 						$.ajax({
 							type: "POST",
 							url: "submitOrderSheet.php",
-							data: 'jobNum=' + $('#jobNumber').val() + 
-							'&sheetColour=' + $('#sheetColour:checked').val() + 
-							'&completionDate=' + $('#completionDate').val() +
-							'&jobPriority=' + $('#jobPriority').val() +
-							'&priorityRate=' + priorityRate + 
-							'&referenceJob=' + $('#referenceJob').val() +
-							'&referenceSpec=' + $('#referenceSpec').val() +
-							'&productionList=' + $('#hiddenDiv').text(),
+							data: formData,
 							
+							cache: false,
+							processData: false,  
+							contentType: false,
 							async: false,
 							success: function(response) {			
 								
 									alert(response);
 							   
 							}
-						});	
-						
+						});
 					}else{
 						alert('incorrect input dectected');
 					}
-					
 				});
-			
-			
-			
 
-				
 				//stage list buttons
 				$('#buttonA').click(function(){
 					$( '#stageDiv' ).append( "Cutting station, " );
@@ -304,7 +317,7 @@
 	<body>
 		<h1>Job Form</h1>
 	
-	<form>
+	<form enctype="multipart/form-data">
 		<h3>Job Information</h3>
 			
 		
@@ -322,7 +335,7 @@
 			<div id="priorityDiv"></div><br>
 			
 			<label>Attach Customer notes: </label>
-			<input type="file" name="attachDoc" multiple><br><br>
+			<input type="file" name="notes" id="notes" multiple><br><br>
 			
 			<label>Reference previous job: </label><input type="number" id="referenceJob" min="0" max="99999999">
 			<div id="refJobDiv"></div><br>

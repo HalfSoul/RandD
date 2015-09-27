@@ -53,6 +53,21 @@
     }else{
 	
 	}
+	
+	if(isset($_FILES['notes'])){
+
+		$file = rand(1000,100000)."-".$_FILES['notes']['name'];
+		$file_loc = $_FILES['notes']['tmp_name'];
+		$file_size = $_FILES['notes']['size'];
+		$file_type = $_FILES['notes']['type'];
+		$folder="uploads/";
+ 
+		move_uploaded_file($file_loc,$folder.$file);
+        
+    }else{
+		
+		$file = null;
+	}
 
 	require_once ("settings.php");
 
@@ -122,7 +137,7 @@
 		$file = null;
 		*/
 		
-		$file = null;
+		
 		$sqlInsertPost = "INSERT INTO jobsheet (job_code, customer_name, job_status, sheet_colour, completion_date, tasks_complete, job_priority, priority_rate, custmer_notes, ref_job, ref_spec ,production_list)
 										VALUES ('$jobNum', 'john', 'In progress', '$sheetColour', '$completionDate', '0', '$jobPriority', '$priorityRate', '$file', '$referenceJob', '$referenceSpec', '$productionList' )";
 					
