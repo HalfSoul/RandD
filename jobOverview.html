@@ -10,12 +10,73 @@
 				border-collapse: collapse;
 			}
 		</style>
-	
+	<script src="jquery-2.1.4.js"></script>
+		<script>
+		$(document).ready(function(){
+		
+		
+		}); 
+		</script>
 	</head> 
 	<body>
 		<h1>Job overview</h1>
 
-	<table style="width:100%">
+		
+		<?php
+			require_once ("settings.php");
+
+			$servername = $host;
+			$username = $user;
+			$password = $pswd;
+
+			// Create connection
+			$conn = new mysqli($servername, $username, $password);
+
+			// Check connection
+			if ($conn->connect_error) {
+				die("Connection failed: " . $conn->connect_error);
+			} 
+
+			// Create database
+			$dbSelected = mysqli_select_db($conn, 'jobtable');
+
+            // sql to create table
+            $sql = "SELECT * FROM jobsheet";
+            $result = $conn->query($sql);
+
+            if ($result->num_rows > 0) {
+                // output data of each row
+                echo "<table border='1' style='width:100%'>
+                <tr>
+					<th>Order Number</th>
+					<th>Customer Name</th>
+					<th>Product Name</th>		
+					<th>Progress Bar</th>
+					<th>Status</th>
+                </tr>";
+
+                while($row = $result->fetch_assoc()) {
+                        echo "<tr>";
+                        echo "<td>" . $row['job_code'] . "</td>";
+                        echo "<td>" . $row['customer_name'] . "</td>";
+                        echo "<td></td>";
+                        echo "<td></td>";
+                        echo "<td>" . $row['job_status'] . "</td>";
+                        echo "</tr>";
+                }
+                echo "</table>";
+
+            } else {
+                echo "0 results";
+            }
+
+            $conn->close();
+        ?>
+		
+		
+	<br>
+	<br>
+	<table id = "overview" style = "width:100%">
 	  <tr>
 		<th>Order Number</th>
 		<th>Customer Name</th>
