@@ -13,7 +13,19 @@
 	<script src="jquery-2.1.4.js"></script>
 		<script>
 		$(document).ready(function(){
-		
+			$.ajax({
+				type: "GET",
+				url: "overviewData.php",
+				data: formData,
+
+				async: false,
+				success: function(response) {			
+					
+						alert(response);
+				   
+				}
+			});
+					
 		
 		}); 
 		</script>
