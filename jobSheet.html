@@ -3,14 +3,32 @@
 	<head> 
 	<meta charset="UTF-8">
     <title>Job Sheet</title> 
+	<script src="jquery-2.1.4.js"></script>
+	<script>
+		$(document).ready(function(){
+			
+			alert(getQueryVariable("job_num"));
+		
+		});
 
+		function getQueryVariable(variable){
+		   var query = window.location.search.substring(1);
+		   var vars = query.split("&");
+		   for (var i=0;i<vars.length;i++) {
+				   var pair = vars[i].split("=");
+				   if(pair[0] == variable){return pair[1];}
+		   }
+		   return(false);
+		}
+	</script>
+	
 	</head> 
 	<body>
 		<h1>Job Sheet</h1>
 
 		<h3>Job Information</h3>
 			<label>Status:</label><br>	
-			<input name="statusChange" type = "button" onClick = "" value = "Change Status">
+			<input name="statusChange" type = "button" onClick = "" value = "Change Status"><br>
 			
 			<label>Sheet Colour: yellow or blue</label><br>	
 			
@@ -28,7 +46,7 @@
 
 			<label>Production stage list: </label><br>
 			<label>Current production stage: </label><br>
-			<input name="stageComplete" type = "button" onClick = "" value = "Stage Complete">
+			<input name="stageComplete" type = "button" onClick = "" value = "Stage Complete"><br>
 			
 			<label>Specification Sheet: </label><br>
 			

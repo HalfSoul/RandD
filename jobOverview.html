@@ -10,86 +10,65 @@
 				border-collapse: collapse;
 			}
 		</style>
-	<script src="jquery-2.1.4.js"></script>
+		<script src="jquery-2.1.4.js"></script>
 		<script>
 		$(document).ready(function(){
+
 			$.ajax({
 				type: "GET",
 				url: "overviewData.php",
-				data: formData,
 
-				async: false,
-				success: function(response) {			
+				success: function(response) {	
+					response = $.parseJSON(response);
+					var tableRow = '';
+					$.each(response, function (i, item) {
+						var rowAttr;
+						if(item.sheet_colour == 1){
+							rowAttr = '<tr align="center" bgcolor="#FFFF66" ';
+						}else{
+							rowAttr = '<tr align="center" bgcolor="#66CCFF" ';
+						}
+						rowAttr += ' style="cursor:pointer" ';
+						rowAttr += 'onclick="document.location.href=' + "'jobSheet.html?job_num=";
+						rowAttr += item.job_code;
+						rowAttr +=  "'" + '">';
+						
+						
+						var listLength = 0;
+						for(var dummy in item.production_list) {
+							listLength++;
+						}
+						
+						var progressBar = '<progress value="' + item.tasks_complete + '" max="' + listLength + '"></progress>';
 					
-						alert(response);
-				   alert('hello');
+						if(item.job_code != null){
+							tableRow += rowAttr +
+								'<td>' + item.job_priority + '</td>' + 
+								'<td>' + item.job_code + '</td>' + 
+								'<td>' + item.customer_name + '</td>' + 
+								'<td>' + 'stand'+ '</td>' + 
+								'<td>' + progressBar + '</td>' + 
+								'<td>' + item.job_status + '</td>' + 
+							'</tr>';
+						}	
+					});
+					
+					$('#overview').append(tableRow);
+
 				}
 			});
-					
+
 		
-		}); 
+		});
 		</script>
 	</head> 
 	<body>
 		<h1>Job overview</h1>
-
-		
-		<?php
-			require_once ("settings.php");
-
-			$servername = $host;
-			$username = $user;
-			$password = $pswd;
-
-			// Create connection
-			$conn = new mysqli($servername, $username, $password);
-
-			// Check connection
-			if ($conn->connect_error) {
-				die("Connection failed: " . $conn->connect_error);
-			} 
-
-			// Create database
-			$dbSelected = mysqli_select_db($conn, 'jobtable');
-
-            // sql to create table
-            $sql = "SELECT * FROM jobsheet";
-            $result = $conn->query($sql);
-
-            if ($result->num_rows > 0) {
-                // output data of each row
-                echo "<table border='1' style='width:100%'>
-                <tr>
-					<th>Order Number</th>
-					<th>Customer Name</th>
-					<th>Product Name</th>		
-					<th>Progress Bar</th>
-					<th>Status</th>
-                </tr>";
-
-                while($row = $result->fetch_assoc()) {
-                        echo "<tr>";
-                        echo "<td>" . $row['job_code'] . "</td>";
-                        echo "<td>" . $row['customer_name'] . "</td>";
-                        echo "<td></td>";
-                        echo "<td></td>";
-                        echo "<td>" . $row['job_status'] . "</td>";
-                        echo "</tr>";
-                }
-                echo "</table>";
-
-            } else {
-                echo "0 results";
-            }
-
-            $conn->close();
-        ?>
-		
-		
-	<br>
+				
 	<br>
 	<table id = "overview" style = "width:100%">
 	  <tr>
+		<th>Job Priority</th>
 		<th>Order Number</th>
 		<th>Customer Name</th>
 		<th>Product Name</th>		
@@ -99,9 +78,10 @@
 	  
 	</table>
 
+	
 		<form>
-			<label>Job Number</label><input type="text" name="jobCode" maxlength="" onkeyup= ""/>
-			<button type="button" onclick="">Search</button>
+			<label>Job Number</label><input type="text" name="jobCode" maxlistLength="" onkeyup= ""/>
+			<button id="submit" type="button" onclick="">Search</button>
 		</form>
 		<div id="bookingDiv"> </div> 
 	</body> 
