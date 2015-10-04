@@ -2,6 +2,7 @@
 	
 	if($_POST['jobNum']){
         $jobNum = $_POST['jobNum'];
+		echo $jobNum;
     }else{
 
 	}
@@ -18,6 +19,12 @@
 		
 	}
 
+	if($_POST['jobStatus']){
+        $jobStatus = $_POST['jobStatus'];
+    }else{
+	
+	}
+	
 	if($_POST['completionDate']){
         $completionDate = $_POST['completionDate'];
     }else{
@@ -96,7 +103,7 @@
 		}
 		// Create table
 		$sqlTable = "CREATE TABLE IF NOT EXISTS jobtable.jobsheet (
-				 job_code INTEGER(8) NOT NULL,
+				 job_code VARCHAR(8) NOT NULL,
 				 customer_name VARCHAR(15),
 				 job_status VARCHAR(15),
 				 sheet_colour TINYINT(1),
@@ -110,8 +117,8 @@
 				 
 				 custmer_notes BLOB,
 				 
-				 ref_job INTEGER(8),
-				 ref_spec INTEGER(8),
+				 ref_job VARCHAR(8),
+				 ref_spec VARCHAR(8),
 				 
 				 production_list VARCHAR(15),
 				 
@@ -139,7 +146,7 @@
 		
 		
 		$sqlInsertPost = "INSERT INTO jobsheet (job_code, customer_name, job_status, sheet_colour, completion_date, tasks_complete, job_priority, priority_rate, custmer_notes, ref_job, ref_spec ,production_list)
-										VALUES ('$jobNum', 'john', 'In progress', '$sheetColour', '$completionDate', '0', '$jobPriority', '$priorityRate', '$file', '$referenceJob', '$referenceSpec', '$productionList' )";
+										VALUES ('$jobNum', 'john', '$jobStatus', '$sheetColour', '$completionDate', '0', '$jobPriority', '$priorityRate', '$file', '$referenceJob', '$referenceSpec', '$productionList' )";
 					
 		if ($conn->query($sqlInsertPost) === TRUE) {
 			echo "Your booking has been created successfully <br>";

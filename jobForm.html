@@ -54,6 +54,19 @@
 						$( '#priorityDiv' ).empty();
 						$( '#priorityDiv' ).append('Please select the priority between 1 to 11, 1 being not important and 11 being urgent!');
 					}
+					
+					//job status validation for urgent
+					var urgentVal = $('#jobPriority').val();
+					if(isUrgent(urgentVal)){
+						urgentVal = true;
+						if(priorityValid){
+							$( '#priorityDiv' ).empty();
+						}
+					}else{
+						urgentVal = false;
+						$( '#priorityDiv' ).empty();
+						$( '#priorityDiv' ).append('Please make sure priority is 11 when urgent job status is selected!');
+					}
 
 					//product stage list validation
 					var stageList = $('#hiddenDiv').text();
@@ -112,18 +125,25 @@
 					}
 					
 					
-					if(dateValid && priorityValid && listValid && refJobValid && refSpecValid && orderValid){
+					if(dateValid && priorityValid && listValid && refJobValid && refSpecValid && orderValid && urgentVal){
 						alert('All input correct');
 						
 						//calculate priority rate
-						var priorityRate = (11 - $('#jobPriority').val())/diffDate();
-						priorityRate = Math.round( priorityRate * 10 ) / 10;
+						var priorityRate = 0;
+						if($('#jobPriority').val() != 11){
+							priorityRate = (11 - $('#jobPriority').val())/diffDate();
+							priorityRate = Math.round( priorityRate * 10 ) / 10;
+						}
+						if(priorityRate == 0){
+							priorityRate = 0.1;
+						}
 						alert(priorityRate);
 
 						//form data to be pasted into Ajax post
 						var formData = new FormData();                  
 						formData.append("jobNum", $('#jobNumber').val());
 						formData.append("sheetColour", $('#sheetColour:checked').val());
+						formData.append("jobStatus", $('#jobStatus').val());
 						formData.append("completionDate", $('#completionDate').val());
 						formData.append("jobPriority", $('#jobPriority').val());
 						formData.append("priorityRate", priorityRate);
@@ -155,7 +175,14 @@
 						alert('incorrect input dectected');
 					}
 				});
-
+				
+				//when job status is change to urgent priority must be change to 11
+				$('#jobStatus').change(function() {
+					if(this.value == 'Urgent'){
+						$( '#jobPriority' ).val(11);
+					}
+				});
+				
 				//stage list buttons
 				$('#buttonA').click(function(){
 					$( '#stageDiv' ).append( "Cutting station, " );
@@ -309,6 +336,18 @@
 					}
 					return true;
 				}
+				
+				//check if job status is urgent if urgent priority has to be 11
+				function isUrgent(priorityVal){
+					if($('#jobStatus').val() == 'Urgent'){
+						if(priorityVal == 11){
+							return true;
+						}else{
+							return false;
+						}
+					}
+					return true;
+				}
 
 			}); 
 
@@ -325,6 +364,13 @@
 			<label>Sheet Colour: yellow or blue</label><br>	
 			<input type="radio" name="sheetColour" id="sheetColour" value="yellow" checked>Yellow <br>
 			<input type="radio" name="sheetColour" id="sheetColour" value="blue">Blue <br><br>
+			
+			<label>Job Status: </label>
+			<select id='jobStatus'>
+				<option value="In progress">In progress</option>
+				<option value="Urgent">Urgent</option>
+				<option value="On hold">On hold</option>
+			</select> <br><br>
 			
 			<label>Completion date: </label>
 			<input type="date" id="completionDate">
