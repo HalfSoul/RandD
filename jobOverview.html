@@ -25,71 +25,125 @@
 			progress::-webkit-progress-value{
 				background-color: #99FF33;
 			}
-			
-			
-			
+
 		</style>
 
 		<script src="jquery-2.1.4.js"></script>
 		<script>
 		$(document).ready(function(){
 
-			$.ajax({
-				type: "GET",
-				url: "overviewData.php",
-
-				success: function(response) {	
-					response = $.parseJSON(response);
-					var tableRow = '';
-					$.each(response, function (i, item) {
-					
-						//create row attribute color type and ref link to job sheet
-						var rowAttr;
-						if(item.sheet_colour == 1){
-							rowAttr = '<tr align="center" bgcolor="#FFFF66" ';
-						}else{
-							rowAttr = '<tr align="center" bgcolor="#94DBFF" ';
-						}
-						rowAttr += ' style="cursor:pointer" ';
-						rowAttr += 'onclick="document.location.href=' + "'jobSheet.html?job_num=";
-						rowAttr += item.job_code;
-						rowAttr +=  "'" + '">';
-						
-						//calculate production list length
-						var listLength = 0;
-						for(var dummy in item.production_list) {
-							listLength++;
-						}
-						
-						//create progress bar
-						var progressBar = '<progress align="left" value="' + item.tasks_complete + '" max="' + listLength + '"></progress>';
-						var percent = item.tasks_complete / listLength * 100
-						percent = Math.round(percent) + '%';
-					
-						if(item.job_code != null){
-							tableRow += rowAttr +
-								'<td>' + item.job_priority + '</td>' + 
-								'<td>' + item.job_code + '</td>' + 
-								'<td>' + item.customer_name + '</td>' + 
-								'<td>' + 'stand'+ '</td>' + 
-								'<td>' + progressBar + ' ' + percent + '</td>' + 
-								'<td>' + item.job_status + '</td>' + 
-							'</tr>';
-						}	
-					});
-					
-					$('#overview').append(tableRow);
-				}
+			displayTable();
+			
+			$('.filtersColor').change(function() {
+				$('#overview').empty();
+				displayTable();
 			});
+			
+			$('.filtersStatus').change(function() {
+				$('#overview').empty();
+				displayTable();
+			});
+			
+			
+			function displayTable() {
+				var statusArray = getCheckedBoxes('filtersStatus');
+				var colorArray = getCheckedBoxes('filtersColor');
 
+				var statusString = JSON.stringify(statusArray);
+				var colorString = JSON.stringify(colorArray);
+				//ajax post retrieve table infomation  
+				$.ajax({
+					type: "POST",
+					url: "overviewData.php",
+					data: {color: colorString, status: statusString},
+					cache: false,
+					success: function(response) {	
+					//alert(response);
+						response = $.parseJSON(response);
+						var tableRow = '';
+						$.each(response, function (i, item) {
+							//create row attribute color type and ref link to job sheet
+							var rowAttr;
+							if(item.sheet_colour == 1){
+								rowAttr = '<tr align="center" bgcolor="#FFFF66" ';
+							}else{
+								rowAttr = '<tr align="center" bgcolor="#94DBFF" ';
+							}
+							rowAttr += ' style="cursor:pointer" ';
+							rowAttr += 'onclick="document.location.href=' + "'jobSheet.html?job_num=";
+							rowAttr += item.job_code;
+							rowAttr +=  "'" + '">';
+							
+							//calculate production list length
+							var listLength = 0;
+							for(var dummy in item.production_list) {
+								listLength++;
+							}
+							
+							//create progress bar
+							var progressBar = '<progress align="left" value="' + item.tasks_complete + '" max="' + listLength + '"></progress>';
+							var percent = item.tasks_complete / listLength * 100
+							percent = Math.round(percent) + '%';
+							
+							//create row
+							if(item.job_code != null){
+								tableRow += rowAttr +
+									'<td>' + item.job_priority + '</td>' + 
+									'<td>' + item.job_code + '</td>' + 
+									'<td>' + item.customer_name + '</td>' + 
+									'<td>' + 'stand'+ '</td>' + 
+									'<td>' + progressBar + ' ' + percent + '</td>' + 
+									'<td>' + item.job_status + '</td>' + 
+								'</tr>';
+							}	
+						});
+						//add row to table
+						$('#overview').append(tableRow);
+					}
+				});
+			}
 		
 		});
+		
+		
+		function getCheckedBoxes(chkboxName) {
+		  var checkboxes = document.getElementsByName(chkboxName);
+		  var checkboxesChecked = [];
+		  // loop over them all
+		  for (var i=0; i<checkboxes.length; i++) {
+			 // And stick the checked ones onto an array...
+			 if (checkboxes[i].checked) {
+				checkboxesChecked.push(checkboxes[i].value);
+			 }
+		  }
+		  // Return the array if it is non-empty, or null
+		  return checkboxesChecked.length > 0 ? checkboxesChecked : null;
+		}
+		
 		</script>
 	</head> 
 	<body>
 		<h1>Job overview</h1>
 				
-	<br>
+	<form>
+		<h3>Filters</h3>
+		<label>Sheet colors: </label> 
+			<input type="checkbox" name="filtersColor" class="filtersColor" value="1" style="min-height:50px;min-width:50px;" checked>Yellow
+			<input type="checkbox" name="filtersColor" class="filtersColor" value="0" style="min-height:50px;min-width:50px;" checked>Blue<br>
+		<label>Stations: </label> 
+			<input type="checkbox" name="filters" id="filters" value="cut" style="min-height:50px;min-width:50px;" checked>Cutting
+			<input type="checkbox" name="filters" id="filters" value="fabricate" style="min-height:50px;min-width:50px;" checked>Fabrication
+			<input type="checkbox" name="filters" id="filters" value="mould" style="min-height:50px;min-width:50px;" checked>Moulding
+			<input type="checkbox" name="filters" id="filters" value="pack" style="min-height:50px;min-width:50px;" checked>Packaging<br>
+			
+		<label>Status: </label> 
+			<input type="checkbox" name="filtersStatus" class="filtersStatus" value="In progress" style="min-height:50px;min-width:50px;" checked>In progress
+			<input type="checkbox" name="filtersStatus" class="filtersStatus" value="Urgent" style="min-height:50px;min-width:50px;" checked>Urgent
+			<input type="checkbox" name="filtersStatus" class="filtersStatus" value="On hold" style="min-height:50px;min-width:50px;" checked>Oh hold
+			<input type="checkbox" name="filtersStatus" class="filtersStatus" value="Complete" style="min-height:50px;min-width:50px;">Complete<br>
+	</form>
+	
+	
 	<table id = "overview" style = "width:100%" class="overview">
 	  <tr>
 		<th>Job Priority</th>
@@ -106,6 +160,6 @@
 			<label>Job Number</label><input type="text" name="jobCode" maxlistLength="" onkeyup= ""/>
 			<button id="submit" type="button" onclick="">Search</button>
 		</form>
-		<div id="bookingDiv"> </div> 
+
 	</body> 
 </HTML>

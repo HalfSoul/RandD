@@ -1,4 +1,22 @@
-<?php
+<?php	
+	if($_POST['color']){
+        $color = $_POST['color'];
+		$color = str_replace("[", "", $color);
+		$color = str_replace("]", "", $color);
+		//echo $color;
+    }else{
+	
+	}
+	
+	if($_POST['status']){
+        $status = $_POST['status'];
+		$status = str_replace("[", "", $status);
+		$status = str_replace("]", "", $status);
+		//echo $status;
+    }else{
+	
+	}
+
 	require_once ("settings.php");
 
 	$servername = $host;
@@ -16,8 +34,28 @@
 	// Create database
 	$dbSelected = mysqli_select_db($conn, 'jobtable');
 
-	// sql to create table
-	$sql = "SELECT * FROM jobsheet ORDER BY job_priority DESC";
+	//create sql query
+	$sql = "SELECT * FROM jobsheet";
+	
+	if(!empty($color) || !empty($status)){
+		$sql .= " WHERE";
+		
+	}
+	if(!empty($color)){
+		$sql .= " sheet_colour IN (" . $color . ")";
+	}
+	
+	if(!empty($color) && !empty($status)){
+		$sql .= " AND";
+		
+	}
+	
+	if(!empty($status)){
+		$sql .= " job_status IN (" . $status . ")";
+	}
+
+	$sql .= " ORDER BY job_priority DESC";
+	//echo $sql;
 	$result = $conn->query($sql);
 
 	if ($result->num_rows > 0) {
