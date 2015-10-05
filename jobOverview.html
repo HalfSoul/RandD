@@ -31,81 +31,144 @@
 		<script src="jquery-2.1.4.js"></script>
 		<script>
 		$(document).ready(function(){
-
+			//initial table display
 			displayTable();
 			
+			//update table when filter color are changed
 			$('.filtersColor').change(function() {
 				$('#overview').empty();
+				$('#overview').append('<tr><th>Job Priority</th><th>Order Number</th><th>Customer Name</th><th>Current Stage</th><th>Progress Bar</th><th>Status</th></tr>');
 				displayTable();
 			});
 			
+			//update table when filter station are changed
+			$('.filtersStation').change(function() {
+				$('#overview').empty();
+				$('#overview').append('<tr><th>Job Priority</th><th>Order Number</th><th>Customer Name</th><th>Current Stage</th><th>Progress Bar</th><th>Status</th></tr>');
+				displayTable();
+			});
+			
+			//update table when filter status are changed
 			$('.filtersStatus').change(function() {
 				$('#overview').empty();
+				$('#overview').append('<tr><th>Job Priority</th><th>Order Number</th><th>Customer Name</th><th>Current Stage</th><th>Progress Bar</th><th>Status</th></tr>');
 				displayTable();
 			});
 			
-			
-			function displayTable() {
-				var statusArray = getCheckedBoxes('filtersStatus');
-				var colorArray = getCheckedBoxes('filtersColor');
-
-				var statusString = JSON.stringify(statusArray);
-				var colorString = JSON.stringify(colorArray);
-				//ajax post retrieve table infomation  
-				$.ajax({
-					type: "POST",
-					url: "overviewData.php",
-					data: {color: colorString, status: statusString},
-					cache: false,
-					success: function(response) {	
-					//alert(response);
-						response = $.parseJSON(response);
-						var tableRow = '';
-						$.each(response, function (i, item) {
-							//create row attribute color type and ref link to job sheet
-							var rowAttr;
-							if(item.sheet_colour == 1){
-								rowAttr = '<tr align="center" bgcolor="#FFFF66" ';
-							}else{
-								rowAttr = '<tr align="center" bgcolor="#94DBFF" ';
-							}
-							rowAttr += ' style="cursor:pointer" ';
-							rowAttr += 'onclick="document.location.href=' + "'jobSheet.html?job_num=";
-							rowAttr += item.job_code;
-							rowAttr +=  "'" + '">';
-							
-							//calculate production list length
-							var listLength = 0;
-							for(var dummy in item.production_list) {
-								listLength++;
-							}
-							
-							//create progress bar
-							var progressBar = '<progress align="left" value="' + item.tasks_complete + '" max="' + listLength + '"></progress>';
-							var percent = item.tasks_complete / listLength * 100
-							percent = Math.round(percent) + '%';
-							
-							//create row
-							if(item.job_code != null){
-								tableRow += rowAttr +
-									'<td>' + item.job_priority + '</td>' + 
-									'<td>' + item.job_code + '</td>' + 
-									'<td>' + item.customer_name + '</td>' + 
-									'<td>' + 'stand'+ '</td>' + 
-									'<td>' + progressBar + ' ' + percent + '</td>' + 
-									'<td>' + item.job_status + '</td>' + 
-								'</tr>';
-							}	
-						});
-						//add row to table
-						$('#overview').append(tableRow);
-					}
-				});
-			}
-		
+			//update table searching job number
+			$('#search').click(function() {
+				$('#overview').empty();
+				$('#overview').append('<tr><th>Job Priority</th><th>Order Number</th><th>Customer Name</th><th>Current Stage</th><th>Progress Bar</th><th>Status</th></tr>');
+				if($('#jobNum').val() != ""){
+					searchResultsTable();
+				}
+			});
 		});
 		
+		//gather table data to display in a table
+		function displayTable() {
+			var statusArray = getCheckedBoxes('filtersStatus');
+			var colorArray = getCheckedBoxes('filtersColor');
+			
+			var statusString = JSON.stringify(statusArray);
+			var colorString = JSON.stringify(colorArray);
+			
+			//ajax post retrieve table infomation  
+			$.ajax({
+				type: "POST",
+				url: "overviewData.php",
+				data: {color: colorString, status: statusString},
+				cache: false,
+				success: function(response) {	
+				//alert(response);
+					response = $.parseJSON(response);
+					createRows("Filter", response);
+				}
+			});
+		}
 		
+		//gather table data to display search results in a table
+		function searchResultsTable() {
+			$.ajax({
+				type: "POST",
+				url: "searchData.php",
+				data: 'jobNum=' + $('#jobNum').val(),
+				//cache: false,
+				success: function(response) {
+					//alert(response);
+					response = $.parseJSON(response);
+					createRows("All", response);
+				}				
+			});
+		}
+		
+		//generate rows for table overview type can be filter or all, 
+		//use filter to display filter items and  use all to show all items, 
+		//input ajax response in response
+		function createRows(type, response){
+			var tableRow = '';
+			$.each(response, function (i, item) {
+				//create row attribute color type and ref link to job sheet
+				var rowAttr;
+				if(item.sheet_colour == 1){
+					rowAttr = '<tr align="center" bgcolor="#FFFF66" ';
+				}else{
+					rowAttr = '<tr align="center" bgcolor="#94DBFF" ';
+				}
+				rowAttr += ' style="cursor:pointer" ';
+				rowAttr += 'onclick="document.location.href=' + "'jobSheet.html?job_num=";
+				rowAttr += item.job_code;
+				rowAttr +=  "'" + '">';
+				
+				//calculate production list length
+				var listLength = 0;
+				for(var dummy in item.production_list) {
+					listLength++;
+				}
+				
+				//create progress bar
+				var progressBar = '<progress align="left" value="' + item.tasks_complete + '" max="' + listLength + '"></progress>';
+				var percent = item.tasks_complete / listLength * 100
+				percent = Math.round(percent) + '%';
+				
+				//find current production task
+				var stationArray;
+				var taskComplete = item.tasks_complete;
+				var productionList = '' + item.production_list;
+				var currentTask = 'E';
+				if(taskComplete < productionList.length){
+					currentTask = productionList.charAt(taskComplete);
+				}
+				if(type == "All"){
+					stationArray = ["A", "B", "C", "D", "E"];
+				}
+				if(type == "Filter"){
+					stationArray = getCheckedBoxes('filtersStation');
+				}
+				
+				//create row
+				if(item.job_code != null){
+					if( stationArray.indexOf(currentTask) > -1){
+						//convert station value to station name
+						currentTask = getStationName(currentTask);
+						
+						tableRow += rowAttr +
+							'<td>' + item.job_priority + '</td>' + 
+							'<td>' + item.job_code + '</td>' + 
+							'<td>' + item.customer_name + '</td>' + 
+							'<td>' +  currentTask + '</td>' + 
+							'<td>' + progressBar + ' ' + percent + '</td>' + 
+							'<td>' + item.job_status + '</td>' + 
+						'</tr>';
+					}
+				}	
+			});
+
+			//add row to table
+			$('#overview').append(tableRow);
+		}
+		
+		//Get check box values in a array, input checkbox name, output array of checkbox value that are ticked 
 		function getCheckedBoxes(chkboxName) {
 		  var checkboxes = document.getElementsByName(chkboxName);
 		  var checkboxesChecked = [];
@@ -120,6 +183,27 @@
 		  return checkboxesChecked.length > 0 ? checkboxesChecked : null;
 		}
 		
+		//convert station value to station name, input letter between A to E, output station name string
+		function getStationName(station) {
+			var StationName = '';
+			if(station == "A"){
+				stationName = "Cutting Station";
+			}
+			if(station == "B"){
+				stationName = "Fabrication Station";
+			}
+			if(station == "C"){
+				stationName = "Moulding Station";
+			}
+			if(station == "D"){
+				stationName = "Packaging Station";
+			}			
+			if(station == "E"){
+				stationName = "Finish";
+			}
+			return stationName;
+		}
+		
 		</script>
 	</head> 
 	<body>
@@ -131,10 +215,11 @@
 			<input type="checkbox" name="filtersColor" class="filtersColor" value="1" style="min-height:50px;min-width:50px;" checked>Yellow
 			<input type="checkbox" name="filtersColor" class="filtersColor" value="0" style="min-height:50px;min-width:50px;" checked>Blue<br>
 		<label>Stations: </label> 
-			<input type="checkbox" name="filters" id="filters" value="cut" style="min-height:50px;min-width:50px;" checked>Cutting
-			<input type="checkbox" name="filters" id="filters" value="fabricate" style="min-height:50px;min-width:50px;" checked>Fabrication
-			<input type="checkbox" name="filters" id="filters" value="mould" style="min-height:50px;min-width:50px;" checked>Moulding
-			<input type="checkbox" name="filters" id="filters" value="pack" style="min-height:50px;min-width:50px;" checked>Packaging<br>
+			<input type="checkbox" name="filtersStation" class="filtersStation" value="A" style="min-height:50px;min-width:50px;" checked>Cutting
+			<input type="checkbox" name="filtersStation" class="filtersStation" value="B" style="min-height:50px;min-width:50px;" checked>Fabrication
+			<input type="checkbox" name="filtersStation" class="filtersStation" value="C" style="min-height:50px;min-width:50px;" checked>Moulding
+			<input type="checkbox" name="filtersStation" class="filtersStation" value="D" style="min-height:50px;min-width:50px;" checked>Packaging
+			<input type="checkbox" name="filtersStation" class="filtersStation" value="E" style="min-height:50px;min-width:50px;" checked>Finish<br>
 			
 		<label>Status: </label> 
 			<input type="checkbox" name="filtersStatus" class="filtersStatus" value="In progress" style="min-height:50px;min-width:50px;" checked>In progress
@@ -149,17 +234,17 @@
 		<th>Job Priority</th>
 		<th>Order Number</th>
 		<th>Customer Name</th>
-		<th>Product Name</th>		
+		<th>Current Stage</th>		
 		<th>Progress Bar</th>
 		<th>Status</th>
 	  </tr>
 	  
 	</table>
-	
-		<form>
-			<label>Job Number</label><input type="text" name="jobCode" maxlistLength="" onkeyup= ""/>
-			<button id="submit" type="button" onclick="">Search</button>
-		</form>
+	<br>
+	<form>
+		<label>Job Number: </label><input type="number" id="jobNum" >
+		<button id="search" type="button" onclick="">Search</button>
+	</form>
 
 	</body> 
 </HTML>
