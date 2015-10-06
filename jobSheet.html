@@ -2,15 +2,153 @@
 <HTML> 
 	<head> 
 	<meta charset="UTF-8">
-    <title>Job Sheet</title> 
+    <title>Job Sheet</title>
+	<style style="text/css">
+		table, th, td {
+			border: 1px solid black;
+			border-collapse: collapse;		
+		}
+		.overview td{ 
+			padding:7px; 
+		}
+		.overview tr:hover {
+			  background-color: #D3D3D3;
+		}
+		progress{
+			/* Reset the default appearance */
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+		}
+		progress::-webkit-progress-value{
+			background-color: #99FF33;
+		}
+	</style>
 	<script src="jquery-2.1.4.js"></script>
 	<script>
 		$(document).ready(function(){
+			//alert(getQueryVariable("job_num"));
 			
-			alert(getQueryVariable("job_num"));
-		
+			//set job number
+			var jobNumber = getQueryVariable("job_num");
+			$("#jobNumber").val(jobNumber);
+			
+			//set job sheet data for display
+			getJobSheetData();
 		});
 
+		//gather table data to display search results in a table
+		function getJobSheetData() {
+			$.ajax({
+				type: "POST",
+				url: "searchData.php",
+				data: 'jobNum=' + getQueryVariable("job_num"),
+				success: function(response) {
+					response = $.parseJSON(response);
+					
+					var tableRow = '';
+					$.each(response, function (i, item) {
+
+						//calculate production list length
+						var listLength = 0;
+						for(var dummy in item.production_list) {
+							listLength++;
+						}
+						
+						//create progress bar
+						var progressBar = '<progress value="' + item.tasks_complete + '" max="' + listLength + '"></progress>';
+						var percent = item.tasks_complete / listLength * 100
+						percent = Math.round(percent) + '%';
+						
+						//find current production task
+						var stationArray;
+						var taskComplete = item.tasks_complete;
+						var productionList = '' + item.production_list;
+						var currentTask = 'E';
+						if(taskComplete < productionList.length){
+							currentTask = productionList.charAt(taskComplete);
+						}
+
+						if(item.job_code != null){
+
+							//set colour
+							if(item.sheet_colour == 1){
+								$('input[name="sheetColour"][value="yellow"]').prop('checked', true);
+							}
+							if(item.sheet_colour == 0){
+								$('input[name="sheetColour"][value="blue"]').prop('checked', true);
+							}
+
+							//set status
+							$("#jobStatus").val(item.job_status);
+							
+							
+							//set completion date
+							$("#completionDate").val(item.completion_date);
+							
+							
+							//set job priority
+							$("#jobPriority").val(item.job_priority);
+							
+							//set customer notes
+							if(item.custmer_notes != ""){
+								$("#noteLink").prop("href", "uploads/" + item.custmer_notes);
+							}else{
+								$("#noteLink").empty();
+								$("#noteLink").append("No file");
+							}
+							
+							//set reference job link
+							if(item.ref_job != ""){
+								$("#perJobLink").append(item.ref_job);
+								$("#perJobLink").prop("href", "jobSheet.html?job_num=" + item.ref_job );
+								$("#referenceJob").val(item.ref_job);
+							}else{
+								$("#perJobLink").append("No reference Job");
+							}
+							
+							//set specification job link
+							if(item.ref_spec != ""){
+								$("#specLink").append(item.ref_spec);
+								$("#specLink").prop("href", "SpecificationSheet.html?spec_num=" + item.ref_spec );
+								$("#referenceSpec").val(item.ref_spec);
+							}else{
+								$("#specLink").append("No specification sheet");
+							}
+	
+							//set production list table
+							var productionList = "";
+							var stringList = item.production_list;
+							var taskComplete = item.tasks_complete;
+							for (var i = 1, len = stringList.length + 1; i < len; i++) {
+								
+								if(taskComplete > 0){
+									productionList += '<tr bgcolor=#99FF33>';
+									taskComplete--;
+								}else{
+									productionList += '<tr>';
+								}
+								productionList +=  "<th>" + i + "</th>";
+								productionList +=  "<th>" + getStationName(stringList[i]) + "</th>"
+								productionList += "</tr>";
+							}
+							$('#taskList').append(productionList);
+							$("#hiddenDiv").append(item.production_list);
+			
+							//set current stage
+							$("#currentTask").append('<b>' + getStationName(currentTask) + '</b>');
+
+							//set progress bar
+							$("#progressBar").append(progressBar + ' ' + percent);
+						
+						}
+
+					});
+				}				
+			});
+		}
+
+		//get the variable value sent by the URL, input variable name, output variable value 
 		function getQueryVariable(variable){
 		   var query = window.location.search.substring(1);
 		   var vars = query.split("&");
@@ -20,6 +158,27 @@
 		   }
 		   return(false);
 		}
+		
+		//convert station value to station name, input letter between A to E, output station name string
+		function getStationName(station) {
+			var StationName = '';
+			if(station == "A"){
+				stationName = "Cutting Station";
+			}
+			if(station == "B"){
+				stationName = "Fabrication Station";
+			}
+			if(station == "C"){
+				stationName = "Moulding Station";
+			}
+			if(station == "D"){
+				stationName = "Packaging Station";
+			}			
+			if(station == "E"){
+				stationName = "Finish";
+			}
+			return stationName;
+		}
 	</script>
 	
 	</head> 
@@ -27,31 +186,68 @@
 		<h1>Job Sheet</h1>
 
 		<h3>Job Information</h3>
-			<label>Status:</label><br>	
-			<input name="statusChange" type = "button" onClick = "" value = "Change Status"><br>
-			
+		
+			<label>Job Number: </label><input type="number" name="jobNumber" id="jobNumber" min="0" max="99999999" readonly>
+			<div id="jobOrderDiv"></div><br>
+		
 			<label>Sheet Colour: yellow or blue</label><br>	
+			<input type="radio" name="sheetColour" id="sheetColour" value="yellow" disabled>Yellow <br>
+			<input type="radio" name="sheetColour" id="sheetColour" value="blue" disabled>Blue <br><br>
 			
-			<label>Completion date: </label><br>
+			<label>Job Status: </label>
+			<select id='jobStatus' disabled>
+				<option value="In progress">In progress</option>
+				<option value="Urgent">Urgent</option>
+				<option value="On hold">On hold</option>
+			</select> <br><br>
 			
-			<label>Days to Completion: </label><br>
-			
-			<label>Job priority: </label><br>	
-			
-			<label>Priority age rate: </label><br>
-			
-			<label>Attach Customer notes: </label><br>
-			
-			<label>Reference previous job: </label><br>
+			<label>Completion date: </label>
+			<input type="date" id="completionDate" readonly>
+			<div id="dateDiv" ></div><br>
 
-			<label>Production stage list: </label><br>
-			<label>Current production stage: </label><br>
-			<input name="stageComplete" type = "button" onClick = "" value = "Stage Complete"><br>
+			<label>Job priority: </label>
+			<input type="number" id="jobPriority" min="1" max="11" readonly>
+			<div id="priorityDiv"></div><br>
 			
-			<label>Specification Sheet: </label><br>
+			<label>Attach Customer notes: </label>
+			<a  id="noteLink" target="_blank">view file</a>
+			<input type="file" name="notes" id="notes" hidden><br><br>
 			
-			<label>Progress Bar: </label><br>
+			<label>Reference previous job: </label>
+			<a  id="perJobLink" target="_blank"></a>
+			<input type="number" id="referenceJob" min="0" max="99999999" hidden>
+			<div id="refJobDiv"></div><br>
 			
+			<label>Reference specification sheet: </label>
+			<a  id="specLink" target="_blank"></a>
+			<input type="number" id="referenceSpec" min="0" max="99999999" hidden>
+			<div id="refSpecDiv"></div><br>
+			
+			<label>Progress Bar: </label><label id="progressBar"></label><br><br>
+			<label>Current production stage: </label><label id="currentTask"></label>
+			<input name="stageComplete" type = "button" onClick = "" value = "Stage Complete"><br><br>
+
+			<label>Production stage list: </label><label></label><br>
+			<button type="button" id="buttonA" onclick="" hidden>Cutting station</button>
+			<button type="button" id="buttonB" onclick="" hidden>Fabrication station</button>
+			<button type="button" id="buttonC" onclick="" hidden>Moulding station</button>
+			<button type="button" id="buttonD" onclick="" hidden>Packaging station</button>
+			<button type="button" id="buttonE" onclick="" hidden>Clear list</button><br>
+			
+			<table id = "taskList" class="taskList" style = "width:30%">
+			  <tr>
+				<th>Number</th>
+				<th>Station</th>
+			  </tr>
+		
+			</table>
+			
+			<div id="stageDiv"></div><br>
+			<div id="stageErrDiv"></div>
+			
+			
+			
+			<br><br>	
 	
 		<h3>Customer Details</h3>
 			<label>Job Number: </label><br>		
@@ -77,7 +273,8 @@
 		<input name="edit" type = "button" onClick = "" value = "Edit">
 		<input name="cancel" type = "button" onClick = "" value = "Cancel">
 		<input name="submit" type = "button" onClick = "" value = "Create order">
-
+		
+		<div id="hiddenDiv" hidden></div>
 	
 	</body> 
 </HTML>
