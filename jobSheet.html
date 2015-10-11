@@ -35,6 +35,7 @@
 			
 			//set job sheet data for display
 			getJobSheetData();
+			
 		});
 
 		//gather table data to display search results in a table
@@ -71,12 +72,14 @@
 
 						if(item.job_code != null){
 
-							//set colour
+							//set colour and background colour
 							if(item.sheet_colour == 1){
 								$('input[name="sheetColour"][value="yellow"]').prop('checked', true);
+								document.body.style.backgroundColor = "#FFFF66";
 							}
 							if(item.sheet_colour == 0){
 								$('input[name="sheetColour"][value="blue"]').prop('checked', true);
+								document.body.style.backgroundColor = "#94DBFF";
 							}
 
 							//set status
@@ -179,6 +182,7 @@
 			}
 			return stationName;
 		}
+		
 	</script>
 	
 	</head> 
