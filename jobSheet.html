@@ -28,22 +28,54 @@
 	<script>
 		$(document).ready(function(){
 			//alert(getQueryVariable("job_num"));
+			var results;
+			var taskComplete;
 			
 			//set job number
 			var jobNumber = getQueryVariable("job_num");
 			$("#jobNumber").val(jobNumber);
 			
 			//set job sheet data for display
-			getJobSheetData();
+			results = getJobSheetData();
+			
+			//find current task
+			results = $.parseJSON(results);
+			$.each(results, function (i, item) {
+				taskComplete = item.tasks_complete;
+				var productionList = '' + item.production_list;
+				var currentTask = 'E';
+				if(taskComplete < productionList.length){
+					currentTask = productionList.charAt(taskComplete);
+				}
+			});
+
+			//complete a task
+			$('#stageComplete').click(function(){
+				currentTask = getStationName(currentTask);
+				if(currentTask == "Finish"){
+					alert("Already done");
+				}else{
+					$.ajax({
+						type: "POST",
+						url: "taskComplete.php",
+						data: 'jobNum=' + getQueryVariable("job_num"),
+						success: function(response) {
+		
+						}				
+					});
+					location.reload(true);
+				}	
+			});
 			
 		});
 
 		//gather table data to display search results in a table
 		function getJobSheetData() {
-			$.ajax({
+			var result = $.ajax({
 				type: "POST",
 				url: "searchData.php",
 				data: 'jobNum=' + getQueryVariable("job_num"),
+				async: false,
 				success: function(response) {
 					response = $.parseJSON(response);
 					
@@ -132,7 +164,7 @@
 									productionList += '<tr>';
 								}
 								productionList +=  "<th>" + i + "</th>";
-								productionList +=  "<th>" + getStationName(stringList[i]) + "</th>"
+								productionList +=  "<th>" + getStationName(stringList[i - 1]) + "</th>"
 								productionList += "</tr>";
 							}
 							$('#taskList').append(productionList);
@@ -144,11 +176,15 @@
 							//set progress bar
 							$("#progressBar").append(progressBar + ' ' + percent);
 						
+							
 						}
 
 					});
-				}				
-			});
+					
+					hi = response;
+				}
+			}).responseText;
+			return result;
 		}
 
 		//get the variable value sent by the URL, input variable name, output variable value 
@@ -161,7 +197,7 @@
 		   }
 		   return(false);
 		}
-		
+
 		//convert station value to station name, input letter between A to E, output station name string
 		function getStationName(station) {
 			var StationName = '';
@@ -229,7 +265,7 @@
 			
 			<label>Progress Bar: </label><label id="progressBar"></label><br><br>
 			<label>Current production stage: </label><label id="currentTask"></label>
-			<input name="stageComplete" type = "button" onClick = "" value = "Stage Complete"><br><br>
+			<input name="stageComplete" id="stageComplete" type = "button" onClick = "" value = "Stage Complete"><br><br>
 
 			<label>Production stage list: </label><label></label><br>
 			<button type="button" id="buttonA" onclick="" hidden>Cutting station</button>
@@ -279,6 +315,6 @@
 		<input name="submit" type = "button" onClick = "" value = "Create order">
 		
 		<div id="hiddenDiv" hidden></div>
-	
+		
 	</body> 
 </HTML>
