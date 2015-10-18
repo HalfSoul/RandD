@@ -1,11 +1,15 @@
 <?php	
 	if($_POST['jobNum']){
         $jobNum = $_POST['jobNum'];
-		//echo $jobNum;
     }else{
 	
 	}
-
+	
+	if($_POST['complete']){
+        $comp = $_POST['complete'];
+    }else{
+	
+	}
 
 	require_once ("settings.php");
 
@@ -27,11 +31,18 @@
 	//create sql query
 	$sql = "UPDATE jobsheet SET tasks_complete = tasks_complete + 1 WHERE job_code = " . $jobNum;
 	
-
-	
 	$result = $conn->query($sql);
-
 	
+	if($comp == 'T'){
+		
+		$sql2 = "UPDATE jobsheet SET job_status = 'Complete' WHERE job_code = " . $jobNum;
+		$result = $conn->query($sql2);
+	}
+	
+	
+	
+	//$result = $conn->query($sql);
+
 
 	$conn->close();
 ?>

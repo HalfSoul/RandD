@@ -30,6 +30,7 @@
 			//alert(getQueryVariable("job_num"));
 			var results;
 			var taskComplete;
+			var lastTask = 'F';
 			
 			//set job number
 			var jobNumber = getQueryVariable("job_num");
@@ -45,10 +46,17 @@
 				var productionList = '' + item.production_list;
 				var currentTask = 'E';
 				if(taskComplete < productionList.length){
+
+					if(taskComplete == productionList.length - 1){
+						
+						lastTask = 'T';
+					}
 					currentTask = productionList.charAt(taskComplete);
+					
 				}
 			});
-
+			
+			
 			//complete a task
 			$('#stageComplete').click(function(){
 				currentTask = getStationName(currentTask);
@@ -58,11 +66,19 @@
 					$.ajax({
 						type: "POST",
 						url: "taskComplete.php",
-						data: 'jobNum=' + getQueryVariable("job_num"),
-						success: function(response) {
-		
-						}				
+						data: 'jobNum=' + getQueryVariable("job_num") + '&complete=' + lastTask,
+						
+				
+						async: false,
+
+						success: function(response) {			
+
+							alert(response);
+							   
+						}			
 					});
+					
+					//refresh page
 					location.reload(true);
 				}	
 			});
@@ -239,6 +255,7 @@
 				<option value="In progress">In progress</option>
 				<option value="Urgent">Urgent</option>
 				<option value="On hold">On hold</option>
+				<option value="Complete">Complete</option>
 			</select> <br><br>
 			
 			<label>Completion date: </label>

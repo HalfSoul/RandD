@@ -149,7 +149,7 @@
 										VALUES ('$jobNum', 'john', '$jobStatus', '$sheetColour', '$completionDate', '0', '$jobPriority', '$priorityRate', '$file', '$referenceJob', '$referenceSpec', '$productionList' )";
 					
 		if ($conn->query($sqlInsertPost) === TRUE) {
-			echo "Your booking has been created successfully <br>";
+			echo "Your booking has been created successfully ";
 			
 
 			
