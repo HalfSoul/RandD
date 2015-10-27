@@ -2,6 +2,7 @@
 	
 	if($_POST['jobNum']){
         $jobNum = $_POST['jobNum'];
+		
     }else{
 
 	}
@@ -41,12 +42,6 @@
     }else{
 	
 	}
-	
-	if($_POST['priorityDate']){
-        $priorityDate = $_POST['priorityDate'];
-    }else{
-	
-	}
 
 	if($_POST['referenceJob']){
         $referenceJob = $_POST['referenceJob'];
@@ -66,6 +61,12 @@
 	
 	}
 	
+	if($_POST['preNote']){
+        $preNote = $_POST['preNote'];
+    }else{
+		$preNote = '';
+	}
+	
 	$fileNum = 0;
 	for ($x = 0; $x < 10; $x++) {
 		$file = 'notes_' . $x;
@@ -76,7 +77,7 @@
 		}
 	} 
 	
-	$noteString = "";
+	$noteString = $preNote;
 	for ($i = 0; $i < $fileNum; $i++) {
 		$file = 'notes_' . $i;
 		if(isset($_FILES[$file])){
@@ -85,13 +86,15 @@
 			$file_size = $_FILES[$file]['size'];
 			$file_type = $_FILES[$file]['type'];
 			$folder="uploads/";
-	 
 			move_uploaded_file($file_loc,$folder.$fileName);
 			if($i == 0){
-				
-				$noteString = $fileName;
+				if($preNote == ''){
+
+					$noteString = $fileName;
+				}else{
+					$noteString = $noteString . "," . $fileName;
+				}
 			}else{
-				
 				$noteString = $noteString . "," . $fileName;
 			}
 			
@@ -112,58 +115,19 @@
 				die("Connection failed: " . $conn->connect_error);
 		} 
 
-		// Create database
+		// Select database
 		$dbSelected = mysqli_select_db($conn, 'jobtable');
 
-		if (!$dbSelected) {
-			$sqlDB = "CREATE DATABASE jobtable";
-			if ($conn->query($sqlDB) === TRUE) {
-				//echo "Database created successfully";
-			} else {
-				echo "Error creating database: " . $conn->error;
-			}
-		}
-		// Create table
-		$sqlTable = "CREATE TABLE IF NOT EXISTS jobtable.jobsheet (
-				 job_code VARCHAR(8) NOT NULL,
-				 customer_name VARCHAR(15),
-				 job_status VARCHAR(15),
-				 sheet_colour TINYINT(1),
-				 
-				 start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-				 completion_date DATE NOT NULL,
-				 tasks_complete INTEGER(10),
-
-				 job_priority DECIMAL(3.1),
-				 priority_rate DECIMAL(3,1),
-				 priority_date DATE NOT NULL,
-				 
-				 custmer_notes VARCHAR(250),
-				 
-				 ref_job VARCHAR(8),
-				 ref_spec VARCHAR(8),
-				 
-				 production_list VARCHAR(15),
-
-				 PRIMARY KEY (job_code)
-		 )";
-
-		if ($conn->query($sqlTable) === TRUE) {
-			//echo "Table created successfully";
-		} else {
-			echo "Error creating table: " . $conn->error;
-		}
-
-		$sqlInsertPost = "INSERT INTO jobsheet (job_code, customer_name, job_status, sheet_colour, completion_date, tasks_complete, job_priority, priority_rate, priority_date, custmer_notes, ref_job, ref_spec ,production_list)
-										VALUES ('$jobNum', 'john', '$jobStatus', '$sheetColour', '$completionDate', '0', '$jobPriority', '$priorityRate', '$priorityDate', '$noteString', '$referenceJob', '$referenceSpec', '$productionList' )";
+		$sqlEditPost = "UPDATE jobsheet SET job_status = '$jobStatus', sheet_colour =  '$sheetColour', completion_date = '$completionDate', 
+											tasks_complete = 0, job_priority = '$jobPriority', priority_rate = '$priorityRate', 
+											custmer_notes = '$noteString', ref_job = '$referenceJob', ref_spec = '$referenceSpec', 
+											production_list = '$productionList'
+											WHERE job_code = '$jobNum'";
 					
-		if ($conn->query($sqlInsertPost) === TRUE) {
-			echo "Your job order has been created successfully ";
-			
-
-			
+		if ($conn->query($sqlEditPost) === TRUE) {
+			echo "Your edit has been created successfully ";			
 		} else {
-			echo "Error: " . $sqlInsertPost . "<br>" . $conn->error;
+			echo "Error: " . $sqlEditPost . "<br>" . $conn->error;
 		}
 		
 	$conn->close();

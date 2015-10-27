@@ -31,6 +31,51 @@
 		<script src="jquery-2.1.4.js"></script>
 		<script>
 		$(document).ready(function(){
+			//update priority
+			$.ajax({
+				type: "GET",
+				url: "searchPriorityDate.php",
+				success: function(response) {	
+					response = $.parseJSON(response);
+					$.each(response, function (i, item) {
+						if(item.job_code != null && diffDate(item.priority_date) > 0 && item.job_priority < 11){
+							//calculate new priority
+							var addToRate = diffDate(item.priority_date) * item.priority_rate;
+							var newPriority = Number(item.job_priority) + addToRate;
+							if(newPriority > 11 ){
+								newPriority = 11;
+							}
+							//pass completion date fail safe
+							if(diffDate(item.completion_date) > 0){
+								newPriority = 11;
+							}
+
+							//calculate today's date
+							var today = new Date();
+							var dd = today.getDate();
+							var mm = today.getMonth()+1; //January is 0
+							var yyyy = today.getFullYear();
+							if(dd<10) {
+								dd='0'+dd;
+							} 
+							if(mm<10) {
+								mm='0'+mm;
+							} 
+							var currentDate = yyyy + "-" + mm + "-" + dd;
+
+							$.ajax({
+								type: "POST",
+								url: "updatePriority.php",
+								data: 'jobNum=' + item.job_code + '&jobPriority=' + newPriority + '&priorityDate=' + currentDate,
+								success: function(response) {	
+									//alert(response);
+								}
+							});
+						}	
+					});
+				}
+			});
+		
 			//initial table display
 			displayTable();
 			
@@ -63,6 +108,40 @@
 					searchResultsTable();
 				}
 			});
+			
+
+			
+			
+			//calculate the difference between current date and estimated completion date
+			function diffDate(priorityDate) {
+				var oneDay = 24*60*60*1000; // hours*minutes*seconds*milliseconds
+				
+				var today = new Date();
+				var dd = today.getDate();
+				var mm = today.getMonth()+1; //January is 0
+				var yyyy = today.getFullYear();
+				if(dd<10) {
+					dd='0'+dd
+				} 
+				if(mm<10) {
+					mm='0'+mm
+				} 
+				var currentDate = new Date(yyyy,mm,dd);
+				
+				var completion = priorityDate.split("-");
+				var completionDate = new Date(completion[0],completion[1],completion[2]);
+
+				var diffDays = Math.round(Math.abs((currentDate.getTime() - completionDate.getTime())/(oneDay)));
+				
+				if(currentDate.getTime() > completionDate.getTime()){
+					//date is later then current date
+					return diffDays;
+				}else{
+					//date is earlier then current date
+					return -diffDays;
+				}
+			}
+			
 		});
 		
 		//gather table data to display in a table
@@ -245,6 +324,7 @@
 		<label>Job Number: </label><input type="number" id="jobNum" >
 		<button id="search" type="button" onclick="">Search</button>
 	</form>
+		<br><input type="button" onclick="location.href='index.html';" value="Back to menu page" />
 
 	</body> 
 </HTML>

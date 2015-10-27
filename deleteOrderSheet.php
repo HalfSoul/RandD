@@ -5,12 +5,12 @@
 	
 	}
 	
-	if($_POST['complete']){
-        $comp = $_POST['complete'];
+	if($_POST['noteName']){
+        $noteName = $_POST['noteName'];
     }else{
-	
+		$noteName = null;
 	}
-
+	
 	require_once ("settings.php");
 
 	$servername = $host;
@@ -29,15 +29,18 @@
 	$dbSelected = mysqli_select_db($conn, 'jobtable');
 
 	//create sql query
-	$sql = "UPDATE jobsheet SET tasks_complete = tasks_complete + 1 WHERE job_code = " . $jobNum;
+	$sql = "DELETE FROM jobsheet WHERE job_code = " . $jobNum;
 	
-	$result = $conn->query($sql);
 	
-	if($comp == 'T'){
-		
-		$sql2 = "UPDATE jobsheet SET job_status = 'Complete' WHERE job_code = " . $jobNum;
-		$result = $conn->query($sql2);
+	$note = explode(",",$noteName);
+	foreach($note as $unlink){
+		$file = "uploads/" . $unlink;
+		if(!is_null($noteName) ){
+			unlink($file);
+		}
 	}
+
+	$result = $conn->query($sql);
 
 	$conn->close();
 ?>

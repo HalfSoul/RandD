@@ -3,7 +3,6 @@
         $color = $_POST['color'];
 		$color = str_replace("[", "", $color);
 		$color = str_replace("]", "", $color);
-		//echo $color;
     }else{
 	
 	}
@@ -12,7 +11,6 @@
         $status = $_POST['status'];
 		$status = str_replace("[", "", $status);
 		$status = str_replace("]", "", $status);
-		//echo $status;
     }else{
 	
 	}
@@ -55,7 +53,7 @@
 	}
 
 	$sql .= " ORDER BY job_priority DESC";
-	//echo $sql;
+
 	$result = $conn->query($sql);
 
 	if ($result->num_rows > 0) {

@@ -27,11 +27,26 @@
 	<script src="jquery-2.1.4.js"></script>
 	<script>
 		$(document).ready(function(){
-			//alert(getQueryVariable("job_num"));
+			
 			var results;
 			var taskComplete;
+			var noteName;
 			var lastTask = 'F';
+			var createdOn;
+
 			
+			//used for edit mode
+			//field empty?
+			var refJobExist;
+			var specExist;
+			
+			//field valid?
+			var dateValid;
+			var priorityValid;
+			var listValid;
+			var refJobValid;
+			var refSpecValid;
+
 			//set job number
 			var jobNumber = getQueryVariable("job_num");
 			$("#jobNumber").val(jobNumber);
@@ -43,6 +58,8 @@
 			results = $.parseJSON(results);
 			$.each(results, function (i, item) {
 				taskComplete = item.tasks_complete;
+				createdOn = item.start_date;
+				noteName = item.custmer_notes;
 				var productionList = '' + item.production_list;
 				var currentTask = 'E';
 				if(taskComplete < productionList.length){
@@ -56,8 +73,7 @@
 				}
 			});
 			
-			
-			//complete a task
+			//complete a task, update task_complete in database
 			$('#stageComplete').click(function(){
 				currentTask = getStationName(currentTask);
 				if(currentTask == "Finish"){
@@ -73,7 +89,7 @@
 
 						success: function(response) {			
 
-							alert(response);
+							//alert(response);
 							   
 						}			
 					});
@@ -83,8 +99,302 @@
 				}	
 			});
 			
-		});
+			//change to edit mode
+			$('#edit').click(function(){
+				editMode();
+			});
+			
+			//cancel edit
+			$('#cancel').click(function(){
+				location.reload(true);
+			});
+			
+			//make edit to jobSheet database
+			$('#save').click(function(){
+				//date validation
+				var txtVal =  $('#completionDate').val();
+				if(isDate(txtVal)){
+					if(diffDate(1) >= 0){
+						//valid date
+						dateValid = true;
+						$( '#dateDiv' ).empty();
+					}else{
+						//invalid date, earlier then current date
+						dateValid = false;
+						$( '#dateDiv' ).empty();
+						$( '#dateDiv' ).append('You can not enter a date earlier then today, the date you enter is earlier by: ' + -diffDate(1) + ' days!');
+					}
+				}else{
+					//invalid date format
+					dateValid = false;
+					$( '#dateDiv' ).empty();
+					$( '#dateDiv' ).append('The date you enter is invalid, please use the dd/mm/yyyy format!');
+				}
 
+				//priority validation
+				var priorityVal =  $('#jobPriority').val();
+				if(isPriority(priorityVal)){
+					//valid priority number
+					priorityValid = true;
+					$( '#priorityDiv' ).empty();
+				}else{
+					//invalid priority number
+					priorityValid = false;
+					$( '#priorityDiv' ).empty();
+					$( '#priorityDiv' ).append('Please select the priority between 1 to 11, 1 being not important and 11 being urgent!');
+				}
+				
+				//job status validation for urgent
+				var urgentVal = $('#jobPriority').val();
+				if(isUrgent(urgentVal)){
+					urgentVal = true;
+					if(priorityValid){
+						$( '#priorityDiv' ).empty();
+					}
+				}else{
+					urgentVal = false;
+					$( '#priorityDiv' ).empty();
+					$( '#priorityDiv' ).append('Please make sure priority is 11 when urgent job status is selected!');
+				}
+
+				//product stage list validation
+				var stageList = $('#hiddenDiv').text();
+				if(stageList){
+					//valid list
+					listValid = true;
+					$( '#stageErrDiv' ).empty();
+				}else{
+					//invalid list, cannot be empty
+					listValid = false;
+					$( '#stageErrDiv' ).empty();
+					$( '#stageErrDiv' ).append('Please add atleast 1 item to the stage production list, it can not be empty!');
+				}
+									
+				//reference job validation
+				isPreviousJob();
+				if(refJobExist){
+					//valid reference job
+					refJobValid = true;
+					$( '#refJobDiv' ).empty();
+				}else{
+					//invalid reference job, job number doesn't exist
+					refJobValid = false;
+					$( '#refJobDiv' ).empty();
+					$( '#refJobDiv' ).append('The job number you have added does not exist please make sure you have the correct number');
+				}
+				
+				//reference specification sheet validation
+				isSpecSheet();
+				if(specExist){
+					refSpecValid = true;
+					$( '#refSpecDiv' ).empty();
+				}else{
+					refSpecValid = false;
+					$( '#refSpecDiv' ).empty();
+					$( '#refSpecDiv' ).append('The specification sheet number you have added does not exist please make sure you have the correct number');
+				}
+				
+				//set file var if not empty
+				var file;
+				if( document.getElementById("notes").files.length =! 0 ){
+						
+					var fileInput = document.getElementById('notes');
+					file = fileInput.files[0];
+				}
+				
+				
+				if(dateValid && priorityValid && listValid && refJobValid && refSpecValid && urgentVal){
+					alert('All input correct');
+					
+					//calculate priority rate
+					var priorityRate = 0;
+					if($('#jobPriority').val() != 11){
+						priorityRate = (11 - $('#jobPriority').val())/diffDate(2);
+						priorityRate = Math.round( priorityRate * 10 ) / 10;
+					}
+					if(priorityRate == 0){
+						priorityRate = 0.1;
+					}
+					if(priorityRate < 0){
+						priorityRate = 11;
+					}
+
+					//form data to be pasted into Ajax post
+					var formData = new FormData();  
+					formData.append("jobNum", getQueryVariable("job_num"));
+					formData.append("sheetColour", $('#sheetColour:checked').val());
+					formData.append("jobStatus", $('#jobStatus').val());
+					formData.append("completionDate", $('#completionDate').val());
+					formData.append("jobPriority", $('#jobPriority').val());
+					formData.append("priorityRate", priorityRate);
+					formData.append("referenceJob", $('#referenceJob').val());
+					formData.append("referenceSpec", $('#referenceSpec').val());
+					formData.append("productionList", $('#hiddenDiv').text());
+					if( document.getElementById("notes").files.length =! 0 ){
+						var file_data = $('input[type="file"]')[0].files; // for multiple files
+						for(var i = 0;i < file_data.length;i++){
+							formData.append("notes_"+i, file_data[i]);
+						}
+					}
+					formData.append("preNote", noteName);
+					
+					//Ajax post form data
+					$.ajax({
+						type: "POST",
+						url: "editOrderSheet.php",
+						data: formData,
+						
+						cache: false,
+						processData: false,  
+						contentType: false,
+						async: false,
+						success: function(response) {			
+								//alert(response);
+						}
+					});
+					
+					//refresh page after successful edit
+					location.reload(true);
+				}else{
+					alert('incorrect input dectected');
+				}
+			});
+			
+			$('#cancelJob').click(function(){
+				
+				if(confirm("Are you sure you want to cancel this job sheet?") == true){
+
+					$.ajax({
+						type: "POST",
+						url: "deleteOrderSheet.php",
+						data: 'jobNum=' + getQueryVariable("job_num") + '&noteName=' + noteName,
+						async: false,
+						success: function(response) {			
+							//alert(response);  
+						}			
+					});
+
+					alert('Job has been deleted');
+
+					location.href = 'jobOverview.html';
+				}
+
+			});
+			
+			//when job status is change to urgent priority must be change to 11
+			$('#jobStatus').change(function() {
+				if(this.value == 'Urgent'){
+					$( '#jobPriority' ).val(11);
+				}
+			});
+			
+			//stage list buttons
+			$('#buttonA').click(function(){
+				$( '#stageDiv' ).append( "Cutting station, " );
+				$( '#hiddenDiv' ).append( "A" );
+			});
+			$('#buttonB').click(function(){
+				$( '#stageDiv' ).append( "Fabrication station, " );
+				$( '#hiddenDiv' ).append( "B" );
+			});
+			$('#buttonC').click(function(){
+				$( '#stageDiv' ).append( "Moulding station, " );
+				$( '#hiddenDiv' ).append( "C" );
+			});
+			$('#buttonD').click(function(){
+				$( '#stageDiv' ).append( "Packaging station, " );
+				$( '#hiddenDiv' ).append( "D" );
+			});
+
+			//clear stage list button
+			$('#buttonE').click(function(){
+				$( '#stageDiv' ).empty();
+				$( '#hiddenDiv' ).empty();
+			});
+			
+			//Ajax post check previous job exist or not method
+			function isPreviousJob(){
+				$.ajax({
+					type: "POST",
+					url: "checkPreviousJob.php",
+					data: 'JobNum=' + $('#referenceJob').val(),
+					dataType: 'json',
+					async: false,
+					success: function(response) {			
+						if(response){
+							refJobExist = true;
+						}else{
+							refJobExist = false;
+						}						   
+					}
+				});				
+			}
+
+			//Ajax post check specification sheet exist or not method
+			function isSpecSheet(){
+				$.ajax({
+					type: "POST",
+					url: "checkSpecSheet.php",
+					data: 'specNum=' + $('#referenceSpec').val(),
+					dataType: 'json',
+					async: false,
+					success: function(response) {			
+						if(response){
+							specExist = true;
+						}else{
+							specExist = false;
+						}						   
+					}
+				});				
+			}
+			
+			//calculate the difference between created on date and estimated completion date
+			function diffDate(type) {
+				var oneDay = 24*60*60*1000; // hours*minutes*seconds*milliseconds
+				
+				var today;
+				var dd ;
+				var mm;
+				var yyyy;
+				
+				if(type == 1){
+					today = createdOn.substring(0, 10);
+					today = today.split('-');
+					dd = today[2];
+					mm = today[1];
+					yyyy = today[0];
+				}
+				if(type == 2){
+					today = new Date();
+					dd = today.getDate();
+					mm = today.getMonth()+1; //January is 0
+					yyyy = today.getFullYear();
+					if(dd<10) {
+						dd='0'+dd
+					} 
+					if(mm<10) {
+						mm='0'+mm
+					} 
+				}
+				
+
+				var currentDate = new Date(yyyy,mm,dd);
+				
+				var completion = $('#completionDate').val().split("-");
+				var completionDate = new Date(completion[0],completion[1],completion[2]);
+
+				var diffDays = Math.round(Math.abs((currentDate.getTime() - completionDate.getTime())/(oneDay)));
+				
+				if(currentDate.getTime() > completionDate.getTime()){
+					//date is earlier then current date
+					return -diffDays;
+				}else{
+					//date is later then current date
+					return diffDays;
+				}
+			}
+		});
+		
 		//gather table data to display search results in a table
 		function getJobSheetData() {
 			var result = $.ajax({
@@ -119,7 +429,14 @@
 						}
 
 						if(item.job_code != null){
-
+							//set create on date
+							var startDate = item.start_date
+							startDate = startDate.substring(0, 10);
+							startDate = startDate.split('-');
+							startDate = startDate.reverse();
+							startDate = startDate.join("/");
+							$("#createOn").append(startDate);							
+							
 							//set colour and background colour
 							if(item.sheet_colour == 1){
 								$('input[name="sheetColour"][value="yellow"]').prop('checked', true);
@@ -143,10 +460,15 @@
 							
 							//set customer notes
 							if(item.custmer_notes != ""){
-								$("#noteLink").prop("href", "uploads/" + item.custmer_notes);
+								var fileName = item.custmer_notes;
+								fileName = fileName.split(",");
+								
+								for (i = 0; i < fileName.length; i++) {
+									$("#noteLinkDiv").append('<a href="uploads/' + fileName[i] +'">' + fileName[i] + '</a><br>');
+								}
 							}else{
-								$("#noteLink").empty();
-								$("#noteLink").append("No file");
+								$("#noteLinkDiv").empty();
+								$("#noteLinkDiv").append("No file");
 							}
 							
 							//set reference job link
@@ -184,6 +506,7 @@
 								productionList += "</tr>";
 							}
 							$('#taskList').append(productionList);
+							$("#stageDiv").append(getStationDiv(item.production_list));
 							$("#hiddenDiv").append(item.production_list);
 			
 							//set current stage
@@ -192,7 +515,6 @@
 							//set progress bar
 							$("#progressBar").append(progressBar + ' ' + percent);
 						
-							
 						}
 
 					});
@@ -235,6 +557,136 @@
 			return stationName;
 		}
 		
+		//convert production_list but to stage DIV
+		function getStationDiv(station) {
+			var StationList = '';
+			for (var i = 0, len = station.length; i < len; i++) {
+			  
+				if(station[i] == "A"){
+					StationList += "Cutting Station, ";
+				}
+				if(station[i] == "B"){
+					StationList += "Fabrication Station, ";
+				}
+				if(station[i] == "C"){
+					StationList += "Moulding Station, ";
+				}
+				if(station[i] == "D"){
+					StationList += "Packaging Station, ";
+				}			
+			
+			}
+			return StationList;
+		}
+		
+		//makes field editable and hides unneeded items
+		function editMode() {
+			//make color type editable
+			$('input[id=sheetColour]').attr('disabled',false);
+				
+			//make job status editable
+			$("#jobStatus").prop("disabled", false);
+			
+			//make completion date editable
+			$('#completionDate').prop('readonly', false);
+			
+			//make job priority editable
+			$('#jobPriority').prop('readonly', false);
+			
+			//hide and reveal customer notes
+			$('#notes').prop('hidden', false);
+			$('#noteLinkDiv').prop('hidden', true);
+			
+			//hide and reveal job ref
+			$('#referenceJob').prop('hidden', false);
+			$('#perJobLink').prop('hidden', true);
+			
+			//hide and reveal spec ref
+			$('#referenceSpec').prop('hidden', false);
+			$('#specLink').prop('hidden', true);
+			
+			//hide progress bar
+			$('#progressLabel').prop('hidden', true);
+			$('#progressBar').prop('hidden', true);
+			
+			//hide current task info
+			$('#currentLabel').prop('hidden', true);
+			$('#currentTask').prop('hidden', true);
+			$('#stageComplete').prop('hidden', true);
+			
+			//reveal stage div buttons
+			$('#buttonA').prop('hidden', false);
+			$('#buttonB').prop('hidden', false);
+			$('#buttonC').prop('hidden', false);
+			$('#buttonD').prop('hidden', false);
+			$('#buttonE').prop('hidden', false);
+			
+			//hide task table and reveal stage div
+			$('#taskList').prop('hidden', true);
+			$('#stageDiv').prop('hidden', false);
+			
+			// reveal save and cancel button
+			$('#save').prop('hidden', false);
+			$('#cancel').prop('hidden', false);
+			
+			//hide edit button
+			$('#edit').prop('hidden', true);
+			
+			//hide cancel job button
+			$('#cancelJob').prop('hidden', true);
+		}
+
+		//check correct date input method
+		function isDate(txtDate){
+			var currVal = txtDate.split("-").reverse().join("/");;
+			if(currVal == '')
+				return false;
+			
+			var rxDatePattern = /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(\d{4})$/; //Declare Regex
+			var dtArray = currVal.match(rxDatePattern); // is format OK?
+			
+			if (dtArray == null) 
+				return false;
+			
+			//Checks for dd/mm/yyyy format.
+			dtDay= dtArray[1];
+			dtMonth = dtArray[3];
+			dtYear = dtArray[5];        
+			
+			if (dtMonth < 1 || dtMonth > 12) 
+				return false;
+			else if (dtDay < 1 || dtDay> 31) 
+				return false;
+			else if ((dtMonth==4 || dtMonth==6 || dtMonth==9 || dtMonth==11) && dtDay ==31) 
+				return false;
+			else if (dtMonth == 2) 
+			{
+				var isleap = (dtYear % 4 == 0 && (dtYear % 100 != 0 || dtYear % 400 == 0));
+				if (dtDay> 29 || (dtDay ==29 && !isleap)) 
+						return false;
+			}
+			return true;
+		}
+		
+		//check if priority input is correct
+		function isPriority(priorityVal){
+			if(priorityVal < 1 || priorityVal > 11){
+				return false;
+			}
+			return true;
+		}
+		
+		//check if job status is urgent if urgent priority has to be 11
+		function isUrgent(priorityVal){
+			if($('#jobStatus').val() == 'Urgent'){
+				if(priorityVal == 11){
+					return true;
+				}else{
+					return false;
+				}
+			}
+			return true;
+		}
 	</script>
 	
 	</head> 
@@ -242,7 +694,8 @@
 		<h1>Job Sheet</h1>
 
 		<h3>Job Information</h3>
-		
+			<label>Created on: </label><label id="createOn"></label><br><br>
+			
 			<label>Job Number: </label><input type="number" name="jobNumber" id="jobNumber" min="0" max="99999999" readonly>
 			<div id="jobOrderDiv"></div><br>
 		
@@ -256,6 +709,7 @@
 				<option value="Urgent">Urgent</option>
 				<option value="On hold">On hold</option>
 				<option value="Complete">Complete</option>
+				<option value="Information missing">Information missing</option>
 			</select> <br><br>
 			
 			<label>Completion date: </label>
@@ -267,8 +721,9 @@
 			<div id="priorityDiv"></div><br>
 			
 			<label>Attach Customer notes: </label>
-			<a  id="noteLink" target="_blank">view file</a>
-			<input type="file" name="notes" id="notes" hidden><br><br>
+			<div id="noteLinkDiv"></div>
+			
+			<input type="file" name="notes" id="notes" multiple hidden><br><br>
 			
 			<label>Reference previous job: </label>
 			<a  id="perJobLink" target="_blank"></a>
@@ -280,16 +735,15 @@
 			<input type="number" id="referenceSpec" min="0" max="99999999" hidden>
 			<div id="refSpecDiv"></div><br>
 			
-			<label>Progress Bar: </label><label id="progressBar"></label><br><br>
-			<label>Current production stage: </label><label id="currentTask"></label>
+			<label id="progressLabel">Progress Bar: </label><label id="progressBar"></label><br><br>
+			<label id="currentLabel">Current production stage: </label><label id="currentTask"></label>
 			<input name="stageComplete" id="stageComplete" type = "button" onClick = "" value = "Stage Complete"><br><br>
 
 			<label>Production stage list: </label><label></label><br>
 			<button type="button" id="buttonA" onclick="" hidden>Cutting station</button>
 			<button type="button" id="buttonB" onclick="" hidden>Fabrication station</button>
 			<button type="button" id="buttonC" onclick="" hidden>Moulding station</button>
-			<button type="button" id="buttonD" onclick="" hidden>Packaging station</button>
-			<button type="button" id="buttonE" onclick="" hidden>Clear list</button><br>
+			<button type="button" id="buttonD" onclick="" hidden>Packaging station</button><br>
 			
 			<table id = "taskList" class="taskList" style = "width:30%">
 			  <tr>
@@ -297,14 +751,20 @@
 				<th>Station</th>
 			  </tr>
 		
-			</table>
+			</table><br>
 			
-			<div id="stageDiv"></div><br>
+			<div id="stageDiv" hidden></div><br>
 			<div id="stageErrDiv"></div>
-			
+			<button type="button" id="buttonE" onclick="" hidden>Clear list</button>
 			
 			
 			<br><br>	
+			
+			<input name="edit" id="edit" type = "button" onClick = "" value = "Edit">
+			<input name="save" id="save" type = "button" onClick = "" value = "Save" hidden>
+			<input name="cancel" id="cancel" type = "button" onClick = "" value = "Cancel" hidden><br><br>
+			<input name="cancelJob" id="cancelJob" type = "button" onClick = "" value = "Cancel Job"><br><br>
+			<input type="button" onclick="location.href='jobOverview.html';" value="Back to menu page" />
 	
 		<h3>Customer Details</h3>
 			<label>Job Number: </label><br>		
@@ -325,11 +785,7 @@
 			<label>QTY: </label><br>
 			<label>ITEM NO.: </label><br>
 			<label>Description: </label><br><br>
-			
 
-		<input name="edit" type = "button" onClick = "" value = "Edit">
-		<input name="cancel" type = "button" onClick = "" value = "Cancel">
-		<input name="submit" type = "button" onClick = "" value = "Create order">
 		
 		<div id="hiddenDiv" hidden></div>
 		

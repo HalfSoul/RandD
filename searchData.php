@@ -1,11 +1,9 @@
 <?php	
 	if($_POST['jobNum']){
         $jobNum = $_POST['jobNum'];
-		//echo $jobNum;
     }else{
 	
 	}
-
 
 	require_once ("settings.php");
 
@@ -26,10 +24,9 @@
 
 	//create sql query
 	$sql = "SELECT * FROM jobsheet WHERE job_code = " . $jobNum;
-	
 
 	$sql .= " ORDER BY job_priority DESC";
-	//echo $sql;
+
 	$result = $conn->query($sql);
 
 	if ($result->num_rows > 0) {

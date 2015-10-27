@@ -137,8 +137,26 @@
 						if(priorityRate == 0){
 							priorityRate = 0.1;
 						}
-						alert(priorityRate);
+						
+						//calculate priority date
+						var priorityDate = new Date();
+						var dd ;
+						var mm;
+						var yyyy;
 
+						dd = priorityDate.getDate();
+						mm = priorityDate.getMonth()+1; //January is 0
+						yyyy = priorityDate.getFullYear();
+						if(dd<10) {
+							dd='0'+dd
+						} 
+						if(mm<10) {
+							mm='0'+mm
+						} 
+						priorityDate = yyyy + "-" + mm + "-" + dd;
+						
+						
+						
 						//form data to be pasted into Ajax post
 						var formData = new FormData();                  
 						formData.append("jobNum", $('#jobNumber').val());
@@ -147,12 +165,16 @@
 						formData.append("completionDate", $('#completionDate').val());
 						formData.append("jobPriority", $('#jobPriority').val());
 						formData.append("priorityRate", priorityRate);
+						formData.append("priorityDate", priorityDate);
 						formData.append("referenceJob", $('#referenceJob').val());
 						formData.append("referenceSpec", $('#referenceSpec').val());
 						formData.append("productionList", $('#hiddenDiv').text());
-						formData.append("productionList", $('#hiddenDiv').text());
 						if( document.getElementById("notes").files.length =! 0 ){
-							formData.append("notes", file);
+							var file_data = $('input[type="file"]')[0].files; // for multiple files
+							for(var i = 0;i < file_data.length;i++){
+								formData.append("notes_"+i, file_data[i]);
+							}
+							
 						}
 
 						//Ajax post form data
@@ -175,6 +197,7 @@
 						alert('incorrect input dectected');
 					}
 				});
+				
 				
 				//when job status is change to urgent priority must be change to 11
 				$('#jobStatus').change(function() {
@@ -205,12 +228,6 @@
 				$('#buttonE').click(function(){
 					$( '#stageDiv' ).empty();
 					$( '#hiddenDiv' ).empty();
-				});
-				
-				//list stage test
-				$('#buttonList').click(function() {
-					//alert($('#stageDiv').text());
-					alert($('#hiddenDiv').text());
 				});
 
 				//Ajax post check previous job exist or not method
@@ -371,6 +388,7 @@
 				<option value="In progress">In progress</option>
 				<option value="Urgent">Urgent</option>
 				<option value="On hold">On hold</option>
+				<option value="Information missing">Information missing</option>
 			</select> <br><br>
 			
 			<label>Completion date: </label>
@@ -382,7 +400,7 @@
 			<div id="priorityDiv"></div><br>
 			
 			<label>Attach Customer notes: </label>
-			<input type="file" name="notes" id="notes" multiple><br><br>
+			<input type="file" name="notes[]" id="notes" multiple><br><br>
 			
 			<label>Reference previous job: </label><input type="number" id="referenceJob" min="0" max="99999999">
 			<div id="refJobDiv"></div><br>
@@ -402,7 +420,6 @@
 			<div id="hiddenDiv" hidden></div>
 			<br>
 			
-			<button type="button" id="buttonList" onclick="">Stage List</button>
 			<button type="button" id="buttonE" onclick="">Clear list</button>
 	
 		<h3>Customer Details</h3>
@@ -425,7 +442,8 @@
 			<label>ITEM NO.: </label><br>
 			<label>Description: </label><br><br>
 			
-			<input id="submit" name="submit" type = "button" onClick = "" value = "Create order"><br>
+			<input id="submit" name="submit" type = "button" onClick = "" value = "Create order"><br><br>
+			<input type="button" onclick="location.href='index.html';" value="Back to menu page" />
 			<div id="test" ></div>
 		
 	</form>

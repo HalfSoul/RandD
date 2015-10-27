@@ -5,8 +5,14 @@
 	
 	}
 	
-	if($_POST['complete']){
-        $comp = $_POST['complete'];
+	if($_POST['jobPriority']){
+        $jobPriority = $_POST['jobPriority'];
+    }else{
+	
+	}
+	
+	if($_POST['priorityDate']){
+        $priorityDate = $_POST['priorityDate'];
     }else{
 	
 	}
@@ -29,15 +35,9 @@
 	$dbSelected = mysqli_select_db($conn, 'jobtable');
 
 	//create sql query
-	$sql = "UPDATE jobsheet SET tasks_complete = tasks_complete + 1 WHERE job_code = " . $jobNum;
+	$sql = "UPDATE jobsheet SET job_priority = '$jobPriority', priority_date = '$priorityDate' WHERE job_code = " . $jobNum;
 	
 	$result = $conn->query($sql);
-	
-	if($comp == 'T'){
-		
-		$sql2 = "UPDATE jobsheet SET job_status = 'Complete' WHERE job_code = " . $jobNum;
-		$result = $conn->query($sql2);
-	}
 
 	$conn->close();
 ?>

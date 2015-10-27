@@ -1,15 +1,4 @@
 <?php	
-	if($_POST['jobNum']){
-        $jobNum = $_POST['jobNum'];
-    }else{
-	
-	}
-	
-	if($_POST['complete']){
-        $comp = $_POST['complete'];
-    }else{
-	
-	}
 
 	require_once ("settings.php");
 
@@ -25,18 +14,24 @@
 		die("Connection failed: " . $conn->connect_error);
 	} 
 
-	// Select database
+	// Create database
 	$dbSelected = mysqli_select_db($conn, 'jobtable');
 
 	//create sql query
-	$sql = "UPDATE jobsheet SET tasks_complete = tasks_complete + 1 WHERE job_code = " . $jobNum;
-	
+	$sql = "SELECT * FROM jobsheet WHERE job_status <> 'Complete'";
+
+	//echo $sql;
 	$result = $conn->query($sql);
-	
-	if($comp == 'T'){
-		
-		$sql2 = "UPDATE jobsheet SET job_status = 'Complete' WHERE job_code = " . $jobNum;
-		$result = $conn->query($sql2);
+
+	if ($result->num_rows > 0) {
+		$emparray[] = array();
+		while($row = $result->fetch_assoc()) {
+			$emparray[] = $row;
+		}
+		echo json_encode($emparray);
+
+	} else {
+		echo "0 results";
 	}
 
 	$conn->close();
