@@ -1,151 +1,266 @@
-
 <!DOCTYPE html>
-<HTML> 
-	<head> 
-	<meta charset="UTF-8">
-    <title>Create new specification sheet</title> 
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Create new specification sheet</title>
 	
-	<script type="text/javascript">
+	<script src="jquery-2.1.4.js"></script>
 	
-		var canvas, ctx, flag = false,
-			prevX = 0,
-			currX = 0,
-			prevY = 0,
-			currY = 0,
-			dot_flag = false;
-
-		var x = "black",
-			y = 2;
-
-		function init() {
-			canvas = document.getElementById('can');
-			ctx = canvas.getContext("2d");
-			w = canvas.width;
-			h = canvas.height;
-
-			canvas.addEventListener("mousemove", function (e) {
-				findxy('move', e)
-			}, false);
-			canvas.addEventListener("mousedown", function (e) {
-				findxy('down', e)
-			}, false);
-			canvas.addEventListener("mouseup", function (e) {
-				findxy('up', e)
-			}, false);
-			canvas.addEventListener("mouseout", function (e) {
-				findxy('out', e)
-			}, false);
-		}
-
-		function color(obj) {
-			switch (obj.id) {
-				case "green":
-					x = "green";
-					break;
-				case "blue":
-					x = "blue";
-					break;
-				case "red":
-					x = "red";
-					break;
-				case "yellow":
-					x = "yellow";
-					break;
-				case "orange":
-					x = "orange";
-					break;
-				case "black":
-					x = "black";
-					break;
-				case "white":
-					x = "white";
-					break;
-			}
-			if (x == "white") y = 14;
-			else y = 2;
-
-		}
-
-		function draw() {
-			ctx.beginPath();
-			ctx.moveTo(prevX, prevY);
-			ctx.lineTo(currX, currY);
-			ctx.strokeStyle = x;
-			ctx.lineWidth = y;
-			ctx.stroke();
-			ctx.closePath();
-		}
-
-		function erase() {
-			var m = confirm("Want to clear");
-			if (m) {
-				ctx.clearRect(0, 0, w, h);
-				document.getElementById("canvasimg").style.display = "none";
-			}
-		}
-
-		function save() {
-			document.getElementById("canvasimg").style.border = "2px solid";
-			var dataURL = canvas.toDataURL();
-			document.getElementById("canvasimg").src = dataURL;
-			document.getElementById("canvasimg").style.display = "inline";
-		}
-
-		function findxy(res, e) {
-			if (res == 'down') {
-				prevX = currX;
-				prevY = currY;
-				var scroll = canvas.getBoundingClientRect();
-				currX = e.clientX - scroll.left;
-				currY = e.clientY - scroll.top;
-
-				flag = true;
-				dot_flag = true;
-				if (dot_flag) {
-					ctx.beginPath();
-					ctx.fillStyle = x;
-					ctx.fillRect(currX, currY, 2, 2);
-					ctx.closePath();
-					dot_flag = false;
+	<script>
+	$(document).ready(function(){
+		$('#submit').click(function(){
+			
+			//Ajax post form data
+			$.ajax({
+				type: 'POST',
+				url: 'SpecificationSheet.php',
+				data: 'prodName=' + $('#prodName').val() //+ '&description=' + ('#description').val() 
+						+ '&cutList=' + $('#cutList').val() + '&packing=' + $('#packing').val() +
+						'&submit=' + $('#submit').val() + 'drawing=' + $('#drawing').val(),
+							
+				//cache: false,
+				//processData: false,  
+				//contentType: false,
+				async: false,
+				success: function(response) {
+					alert("successful"); 
 				}
-			}
-			if (res == 'up' || res == "out") {
-				flag = false;
-			}
-			if (res == 'move') {
-				if (flag) {
-					prevX = currX;
-					prevY = currY;
-					var scroll = canvas.getBoundingClientRect();
-					currX = e.clientX - scroll.left;
-					currY = e.clientY - scroll.top;
-					draw();
-				}
-			}
-		}
-	</script>
+			});
+		});
+	});
+
+	var canvas,
+    context,
+    dragging = false,
+    dragStartLocation,			
+    snapshot;
+
+function getCanvasCoordinates(event) {
+    var x = event.clientX - canvas.getBoundingClientRect().left,
+        y = event.clientY - canvas.getBoundingClientRect().top;
+
+    return {x: x, y: y};
+}
+
+function takeSnapshot() {
+    snapshot = context.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+function restoreSnapshot() {
+    context.putImageData(snapshot, 0, 0);
+}
+
+function drawLine(position) {
+    context.beginPath();
+    context.moveTo(dragStartLocation.x, dragStartLocation.y);
+    context.lineTo(position.x, position.y);
+    context.stroke();
+}
+
+function drawCircle(position) {
+    var radius = Math.sqrt(Math.pow((dragStartLocation.x - position.x), 2) + Math.pow((dragStartLocation.y - position.y), 2));
+    context.beginPath();
+    context.arc(dragStartLocation.x, dragStartLocation.y, radius, 0, 2 * Math.PI, false);
+}
+
+function drawRect(position) {
+    context.beginPath();
+    context.strokeRect(position.x, position.y, dragStartLocation.x - position.x, dragStartLocation.y - position.y);
 	
-	</head> 
+	if (fillBox.checked) {
+        context.beginPath();
+		context.fillRect(position.x, position.y, dragStartLocation.x - position.x, dragStartLocation.y - position.y);
+		}
+}
+
+function drawPolygon(position, sides, angle) {
+    var coordinates = [],
+        radius = Math.sqrt(Math.pow((dragStartLocation.x - position.x), 2) + Math.pow((dragStartLocation.y - position.y), 2)),
+        index = 0;
+
+    for (index = 0; index < sides; index++) {
+        coordinates.push({x: dragStartLocation.x + radius * Math.cos(angle), y: dragStartLocation.y - radius * Math.sin(angle)});
+        angle += (2 * Math.PI) / sides;
+    }
+
+    context.beginPath();
+    context.moveTo(coordinates[0].x, coordinates[0].y);
+    for (index = 1; index < sides; index++) {
+        context.lineTo(coordinates[index].x, coordinates[index].y);
+    }
+
+    context.closePath();
+}
+
+function drawFreeDraw(position) {	
+    context.beginPath();
+	//context.moveTo(dragStartLocation.x, dragStartLocation.y);
+	context.lineTo(position.x, position.y);
+	context.stroke();
+	context.closePath();
+}
+
+function draw(position) {
+
+    var fillBox = document.getElementById("fillBox"),
+        shape = document.querySelector('input[type="radio"][name="shape"]:checked').value;
+	if (shape === "circle") {
+        drawCircle(position);
+    }
+    if (shape === "line") {
+        drawLine(position);
+    }
+    if (shape === "rect") {
+        drawRect(position);
+    }
+    if (shape === "polygon") {
+        drawPolygon(position, 8, Math.PI / 4);
+    }
+	if (shape === "freeDraw") {
+        drawFreeDraw(position);
+    }
+    if (fillBox.checked) {
+        context.fill();
+    } else {
+        context.stroke();
+    }
+	
+	context.strokeStyle = ss;
+	context.fillStyle = ss;
+	
+	if(pensize == "4size"){
+	context.lineWidth == 4;
+	}else
+	if(pensize == "6size"){
+	context.lineWidth == 6;
+	}else
+	if(pensize == "8size"){
+	context.lineWidth == 8;
+	}else
+	if(pensize == "10size"){
+	context.lineWidth == 10;
+	}
+}
+
+function color(obj) {
+	switch (obj.id) {
+		case "green":
+			ss = "green";
+			break;
+		case "blue":
+			ss = "blue";
+			break;
+		case "red":
+			ss = "red";
+			break;
+		case "yellow":
+			ss = "yellow";
+			break;
+		case "orange":
+			ss = "orange";
+			break;
+		case "black":
+			ss = "black";
+			break;
+		case "white":
+			ss = "white";
+			break;
+	}
+}
+
+function erase() {
+	var m = confirm("Do you wish to clear");
+	if (m) {
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	}
+}
+
+function save() {
+	document.getElementById("canvasimg").style.border = "2px solid";
+	var dataURL = canvas.toDataURL();
+	document.getElementById("canvasimg").src = dataURL;
+	document.getElementById("canvasimg").style.display = "inline";
+}
+
+function returnSave() {
+// save canvas image as data url (png format by default)
+      var dataURL = canvas.toDataURL("image/png");
+
+      // set canvasImg image src to dataURL
+      // so it can be saved as an image
+	  
+	  var drawing = document.createElement("img"); // create img tag
+      drawing.src = dataURL;
+      document.body.appendChild(drawing); // add to end of your document
+	  
+	  //returnSave(); //execute the function
+	}
+	
+	// Converts canvas to an image
+//function convertCanvasToImage(canvas) {
+	//var image = new Image();
+	//image.src = canvas.toDataURL("image/png");
+	//return image;
+//}
+    
+
+function dragStart(event) {
+    dragging = true;
+    dragStartLocation = getCanvasCoordinates(event);
+    takeSnapshot();
+}
+
+function drag(event) {
+    var position;
+    if (dragging === true) {
+        restoreSnapshot();
+        position = getCanvasCoordinates(event);
+        draw(position, "polygon");
+    }
+}
+
+function dragStop(event) {
+    dragging = false;
+    restoreSnapshot();
+    var position = getCanvasCoordinates(event);
+    draw(position, "polygon");
+}
+
+function init() {
+    canvas = document.getElementById('canvas');
+    context = canvas.getContext("2d");
+	w = canvas.width;
+	h = canvas.height;
+	context.lineWidth = 4;
+		
+    canvas.addEventListener("mousedown", dragStart, false);
+    canvas.addEventListener("mousemove", drag, false);
+    canvas.addEventListener("mouseup", dragStop, false);
+}
+
+window.addEventListener('load', init, false);
+</script>
+		
+</head> 
 	<body onload="init()">
 		<h1>Specification Form</h1>
 
 	<form>
 		<h3>Specification Information</h3>
-			<label>Product Name: </label><input type="text" name="productName"><br>	
-			
-			
-			<label>Date: </label>
-			<input type="date" name="completionDate"><br><br>
+			<label>Product Name: </label><input type="text" name="productName" id="prodName"><br>	
+			<br>
 			
 			<label>Description: </label><br>
-			<textarea rows="4" cols="50" name="description">Enter text here...</textarea><br><br>
+			<textarea rows="4" cols="50" onclick="this.focus();this.select()" name="description" id="description" placeholder="Enter text here..."></textarea><br><br>
+			
 			
 			<label>Cut list: </label><br>
-			<textarea rows="4" cols="50" name="cutList">Enter text here...</textarea><br><br>
+			<textarea rows="4" cols="50" onclick="this.focus();this.select()" name="cutList" id="cutList" placeholder="Enter text here..."></textarea><br><br>
 			
 			<label>Fabrication details: </label><br>
 			
-			<canvas id="can" width="700" height="500" style="border:2px solid;"></canvas>
+			<canvas id="canvas" width="700" height="500" style="border:2px solid;"></canvas>
 			<div style="position:absolute;top:43%;left:38%;">Choose Color</div>
 			<div style="position:absolute;top:46%;left:38%;width:30px;height:30px;background:green;" id="green" onclick="color(this)"></div>
 			<div style="position:absolute;top:46%;left:40%;width:30px;height:30px;background:blue;" id="blue" onclick="color(this)"></div>
@@ -153,18 +268,43 @@
 			<div style="position:absolute;top:50%;left:38%;width:30px;height:30px;background:yellow;" id="yellow" onclick="color(this)"></div>
 			<div style="position:absolute;top:50%;left:40%;width:30px;height:30px;background:orange;" id="orange" onclick="color(this)"></div>
 			<div style="position:absolute;top:50%;left:42%;width:30px;height:30px;background:black;" id="black" onclick="color(this)"></div>
+			<div style="position:absolute;top:65%;left:38%;">Choose Shape</div>
+				<p><input style="position:absolute;top:68%;left:38%;" type="radio" name="shape" value="freeDraw" checked="checked"></p>
+				<div style="position:absolute;top:68%;left:40%;">Free-draw</div>
+				<p><input style="position:absolute;top:72%;left:38%;" type="radio" name="shape" value="line" checked="checked"></p>
+				<div style="position:absolute;top:72%;left:40%;">Line</div>
+				<p><input style="position:absolute;top:76%;left:38%;" type="radio" name="shape" value="circle"></p>
+				<div style="position:absolute;top:76%;left:40%;">Circle</div>
+				<p><input style="position:absolute;top:84%;left:38%;" type="radio" name="shape" value="rect"></p>
+				<div style="position:absolute;top:84%;left:40%;">Rectangle</div>
+				<p><input style="position:absolute;top:80%;left:38%;" type="radio" name="shape" value="polygon"></p>
+				<div style="position:absolute;top:80%;left:40%;">Polygon</div>
+			<div id="controls">
+			<p><input style="position:absolute;top:84%;left:46%;" id="fillBox" type="checkbox" checked="checked"></label></p>
+			<div style="position:absolute;top:84%;left:48%;">Fill</div>
+			<div style="position:absolute;top:88%;left:38%;">Pen Size</div>
+			<p><input style="position:absolute;top:92%;left:38%;" type="radio" name="pensize" value="4size" checked="checked"></p>
+			<div style="position:absolute;top:92%;left:40%;">4</div>
+			<p><input style="position:absolute;top:92%;left:42%;" type="radio" name="pensize" value="6size" checked="checked"></p>
+			<div style="position:absolute;top:92%;left:44%;">6</div>
+			<p><input style="position:absolute;top:96%;left:38%;" type="radio" name="pensize" value="8size" checked="checked"></p>
+			<div style="position:absolute;top:96%;left:40%;">8</div>
+			<p><input style="position:absolute;top:96%;left:42%;" type="radio" name="pensize" value="10size" checked="checked"></p>
+			<div style="position:absolute;top:96%;left:44%;">10</div>
 			<div style="position:absolute;top:56%;left:38%;">Eraser</div>
 			<div style="position:absolute;top:59%;left:38%;width:30px;height:30px;background:white;border:2px solid;" id="white" onclick="color(this)"></div>
 			<img id="canvasimg" style="position:absolute;top:42%;left:52%;" style="display:none;">
 			<input type="button" value="save" id="sve" size="30" onclick="save()" >
 			<input type="button" value="clear" id="clr" size="23" onclick="erase()" >
+			<input type="file" id="file"/>
 			
-			<br>
+			<br><br>
 			
 			<label>Packaging: </label><br>
-			<textarea rows="4" cols="50" name="description">Enter text here...</textarea><br><br>
+			<textarea rows="4" cols="50" onclick="this.focus();this.select()" name="packing" id="packing" placeholder="Enter text here..."></textarea><br><br>
 
-		<input name="submit" type = "button" onClick = "" value = "Create order">
+
+		<input name="submit" id="submit" type = "button" onClick = "" value = "Submit Specification Sheet">
 	</form>
 	
 	</body> 
